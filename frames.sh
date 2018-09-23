@@ -1,9 +1,10 @@
 #!/bin/bash
-mkdir images
 FILE_PATH=$1
+ARGS="${@:2}"
 FILE_NAME=$(basename -- "$FILE_PATH")
 VIDEO_NAME="${FILE_NAME%%.*}"
 DIR="images/$VIDEO_NAME"
-mkdir $DIR
-ffmpeg -i $1 -ss 00:00:00 -vf fps=5 $DIR/image-%06d.png
+mkdir -p $DIR
+rm -f $DIR/*
+ffmpeg -i $FILE_PATH $ARGS $DIR/image-%06d.png -hide_banner
 
