@@ -1,3 +1,7 @@
 images/
 videos/
 labels/
+
+labelImg
+
+*.pyc
