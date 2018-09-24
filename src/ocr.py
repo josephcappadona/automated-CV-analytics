@@ -6,7 +6,7 @@ def image_to_text(im):
     new_size = tuple(4*x for x in im.size)
     im = im.resize(new_size, Image.ANTIALIAS)
 
-    im = im.filter(ImageFilter.MedianFilter())
+    #im = im.filter(ImageFilter.MedianFilter())
     enhancer = ImageEnhance.Contrast(im)
     im = enhancer.enhance(2)
     im = im.convert('L')
@@ -15,7 +15,7 @@ def image_to_text(im):
     im = im.filter(ImageFilter.SMOOTH_MORE)
     im = trim(im, 255)
 
-    return pytesseract.image_to_string(im, lang='eng', config='-psm 6'), im
+    return pytesseract.image_to_string(im, lang='eng', config='-psm 6')
 
 
 # taken from https://gist.github.com/mattjmorrison/932345
