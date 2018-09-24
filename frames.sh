@@ -1,12 +1,15 @@
 #!/bin/bash
-FILE_PATH=$1
-ARGS="${@:2}"
-FILE_NAME=$(basename -- "$FILE_PATH")
-VIDEO_NAME="${FILE_NAME%%.*}"
-FRAMES_DIR="images/$VIDEO_NAME"
-LABELS_DIR="labels/$VIDEO_NAME"
+VIDEO_FILE_PATH=$1
+FFMPEG_ARGS="${@:2}"
+
+VIDEO_FILE_NAME=$(basename -- "$VIDEO_FILE_PATH")
+VIDEO_NAME="${VIDEO_FILE_NAME%%.*}"
+
+DATA_DIR="data"
+FRAMES_DIR="$DATA_DIR/$VIDEO_NAME/images"
+LABELS_DIR="$DATA_DIR/$VIDEO_NAME/labels"
 mkdir -p $FRAMES_DIR
 mkdir -p $LABELS_DIR
-rm -f $FRAMES_DIR/*
-ffmpeg -i $FILE_PATH $ARGS $FRAMES_DIR/image-%06d.png -hide_banner
+
+ffmpeg -i $VIDEO_FILE_PATH $FFMPEG_ARGS $FRAMES_DIR/image-%06d.png -hide_banner
 

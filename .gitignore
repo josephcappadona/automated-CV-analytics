@@ -1,7 +1,4 @@
-images/
-videos/
-labels/
+data/
 
 labelImg
 
-*.pyc
