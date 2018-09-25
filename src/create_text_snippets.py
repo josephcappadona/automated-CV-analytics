@@ -2,7 +2,8 @@ from sys import argv
 from subprocess import call
 from os import listdir, mkdir
 from os.path import isfile, join, exists
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageOps, ImageFilter
+from image_utils import preprocess_image
 import xml.etree.ElementTree as ET
 
 if __name__ == '__main__':
@@ -60,14 +61,16 @@ def create_text_snippets(label_file_path, img_file_path, save=True, ret=False):
     box_imgs = []
     for box_name, box_coords in boxes.iteritems():
         box_img = im.copy().crop(box_coords)
+        box_img = preprocess_image(box_img)
         box_imgs.append(box_img)
         if save:
             if not exists(TEXT_SNIPPETS_DIR):
                 mkdir(TEXT_SNIPPETS_DIR)
-            box_img.save(TEXT_SNIPPETS_DIR + '/' + img_file_base + '_' + box_name + '.png')
+            box_img.save(TEXT_SNIPPETS_DIR + '/' + img_file_base + '_' + box_name + '.tif')
 
     if ret:
         return box_imgs
+
 
 for label_fp, img_fp in get_label_img_file_path_pairs():
     create_text_snippets(label_fp, img_fp)
