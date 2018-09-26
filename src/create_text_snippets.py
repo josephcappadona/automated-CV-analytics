@@ -23,7 +23,8 @@ def get_image_file_paths():
 
 def get_label_file_paths():
     
-    label_file_paths = [join(LABEL_DIR, f) for f in listdir(LABEL_DIR) if isfile(join(LABEL_DIR, f))]
+    label_file_paths = [join(LABEL_DIR, f) for f in listdir(LABEL_DIR) if isfile(join(LABEL_DIR, f)) and f.endswith('.xml')]
+
     return label_file_paths
 
 
@@ -67,11 +68,14 @@ def create_text_snippets(label_file_path, img_file_path, save=True, ret=False):
             if not exists(TEXT_SNIPPETS_DIR):
                 mkdir(TEXT_SNIPPETS_DIR)
             box_img.save(TEXT_SNIPPETS_DIR + '/' + img_file_base + '_' + box_name + '.tif')
+            box_file = open(TEXT_SNIPPETS_DIR + '/' + img_file_base + '_' + box_name + '.box', 'w+')
+            box_file.close()
 
     if ret:
         return box_imgs
 
 
 for label_fp, img_fp in get_label_img_file_path_pairs():
+    print label_fp, img_fp
     create_text_snippets(label_fp, img_fp)
 
