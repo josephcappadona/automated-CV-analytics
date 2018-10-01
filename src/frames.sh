@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if (( $# < 2 )); then
+    echo "USAGE:  frames.sh VIDEO_FILE_PATH [FFMPEG_ARGS ...]"
+    exit 1
+fi
+
 VIDEO_FILE_PATH=$1
 FFMPEG_ARGS="${@:2}"
 
