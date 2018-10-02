@@ -6,13 +6,8 @@ from PIL import Image, ImageEnhance, ImageOps, ImageFilter
 from image_utils import preprocess_image
 import xml.etree.ElementTree as ET
 
-if __name__ == '__main__':
-    VIDEO_NAME = argv[1]
 
 DATA_DIR = 'data'
-IMAGE_DIR = DATA_DIR + '/' + VIDEO_NAME + '/frames'
-LABEL_DIR = DATA_DIR + '/' + VIDEO_NAME + '/labels'
-TEXT_SNIPPETS_DIR = DATA_DIR + '/' + VIDEO_NAME + '/text_snippets'
 
 
 def get_image_file_paths():
@@ -46,15 +41,7 @@ def create_text_snippets(label_file_path, img_file_path, save=True, ret=False):
     tree = ET.parse(label_file_path)
     root = tree.getroot()
 
-    boxes = {}
-    for child in root:
-        if child.tag == 'object':
-            for attrib in child:
-                if attrib.tag == 'name':
-                    name = attrib.text
-                elif attrib.tag == 'bndbox':
-                    xmin, ymin, xmax, ymax = [int(coord.text) for coord in attrib]
-            boxes[name] = (xmin, ymin, xmax, ymax)
+    boxes = get_boxes(root)
 
     im = Image.open(img_file_path)
     img_file_base = img_file_path.split('/')[-1].split('.')[0]
@@ -74,8 +61,33 @@ def create_text_snippets(label_file_path, img_file_path, save=True, ret=False):
     if ret:
         return box_imgs
 
+def get_boxes(xml_root):
+    boxes = {}
+    for child in xml_root:
+        if child.tag == 'object':
+            for attrib in child:
+                if attrib.tag == 'name':
+                    name = attrib.text
+                elif attrib.tag == 'bndbox':
+                    xmin, ymin, xmax, ymax = [int(coord.text) for coord in attrib]
+            boxes[name] = (xmin, ymin, xmax, ymax)
+    return boxes
 
-for label_fp, img_fp in get_label_img_file_path_pairs():
-    print label_fp, img_fp
-    create_text_snippets(label_fp, img_fp)
+
+
+
+if __name__ == '__main__':
+
+    if len(argv) != 2:
+        print 'USAGE:  python create_text_snippets.py VIDEO_NAME'
+        exit(1)
+    VIDEO_NAME = argv[1]
+
+    IMAGE_DIR = DATA_DIR + '/' + VIDEO_NAME + '/frames'
+    LABEL_DIR = DATA_DIR + '/' + VIDEO_NAME + '/labels'
+    TEXT_SNIPPETS_DIR = DATA_DIR + '/' + VIDEO_NAME + '/text_snippets'
+
+    for label_fp, img_fp in get_label_img_file_path_pairs():
+        print label_fp, img_fp
+        create_text_snippets(label_fp, img_fp)
 
