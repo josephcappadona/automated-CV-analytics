@@ -17,5 +17,7 @@ LABELS_DIR="$DATA_DIR/$VIDEO_NAME/labels"
 mkdir -p $FRAMES_DIR
 mkdir -p $LABELS_DIR
 
-ffmpeg -i $VIDEO_FILE_PATH $FFMPEG_ARGS $FRAMES_DIR/image-%06d.png -hide_banner
+FFMPEG_COMMAND="ffmpeg -i $VIDEO_FILE_PATH $FFMPEG_ARGS $FRAMES_DIR/image-%06d.png -hide_banner"
+echo "$FFMPEG_COMMAND" > "$FRAMES_DIR/command.txt"
+eval $FFMPEG_COMMAND
 
