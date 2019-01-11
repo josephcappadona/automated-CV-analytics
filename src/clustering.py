@@ -1,24 +1,36 @@
 from math import sqrt, log
+from sklearn.cluster import KMeans
+import numpy as np
+import matplotlib.pyplot as plt
 
 
-def get_optimal_clustering(data_to_cluster, cluster_sizes=[1,2,4,8,16,32,64,128,256,512,1024]):
+def get_optimal_clustering(data_to_cluster, cluster_sizes=[1,2,4,8,16,32,64,128,256,512,1024], show=True):
+    if len(cluster_sizes) > 1:
+        print('Finding optimal k...')
+    else:
+        print('Finding clusters...')
+        
     models = {}
     scores = []
     for k in cluster_sizes:
-        print('k: %s' % k, end='')
+        print('k: %s' % k, end='', flush=True)
         kmeans = KMeans(n_clusters=k)
         kmeans.fit(data_to_cluster)
         score = log(kmeans.inertia_)
         print(', score: %f' % score)
         models[k] = kmeans
         scores.append(score)
-    cluster_score_data = np.stack((np.array(cluster_sizes), scores), axis=-1)
-    k = get_knee_point(cluster_score_data)
+    cluster_score_data = np.stack((cluster_sizes, scores), axis=-1)
+    k = get_knee_point(cluster_score_data, show=show)
 
+    if len(cluster_sizes) > 1:
+        print('Optimal k: %d' % k)
+    else:
+        print('Clusters found.')
     return models[k], k
 
 
-def get_knee_point(data):
+def get_knee_point(data, show=True):
     # adapted from https://stackoverflow.com/questions/2018178/finding-the-best-trade-off-point-on-a-curve
     
     n_points = data.shape[0]
@@ -35,18 +47,19 @@ def get_knee_point(data):
     vfunc_sqrt = np.vectorize(sqrt)
     dist_to_line = vfunc_sqrt((vec_to_line * vec_to_line).sum(axis=1))
     
-    plt.figure()
-    plt.plot(data[:,0], data[:,1], 'bx-')
-    plt.xlabel('k')
-    plt.ylabel('sum of squared distances')
-    plt.title('Elbow Method For Optimal k')
-    
-    plt.figure()
-    plt.plot(data[:,0], dist_to_line, 'bx-')
-    plt.xlabel('k')
-    plt.ylabel('distance to line')
-    plt.title('Knee Point For Optimal k')
-    plt.show()
+    if show:
+        plt.figure()
+        plt.plot(data[:,0], data[:,1], 'bx-')
+        plt.xlabel('k')
+        plt.ylabel('sum of squared distances')
+        plt.title('Elbow Method For Optimal k')
+
+        plt.figure()
+        plt.plot(data[:,0], dist_to_line, 'bx-')
+        plt.xlabel('k')
+        plt.ylabel('distance to line')
+        plt.title('Knee Point For Optimal k')
+        plt.show()
     
     index_of_max = max(enumerate(dist_to_line), key=lambda i_dist: i_dist[1])[0]
     k = data[index_of_max, 0]
