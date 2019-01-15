@@ -9,6 +9,7 @@ from sklearn.multiclass import OneVsRestClassifier
 from features import extract_features
 from f_hat import build_summed_area_table, f_hat
 from ess import ESS
+from time import time
 
 
 class Model(object):
@@ -42,16 +43,32 @@ class Model(object):
     def SVM_train(self, train_ims, train_im_labels):
         
         try:
+            print('Training SVM decision model...')
+            start = time()
+
             train_im_histograms = self.get_histograms(train_ims)
             
             # TODO: find optimal C;   TODO: support different kernels
+            print('Fitting model...')
+            start_fit = time()
             svm = OneVsRestClassifier(SVC(kernel='linear', C=0.1))
             svm.fit(train_im_histograms, train_im_labels)
+            end_fit = time()
+            s_fit_total = int(end_fit - start_fit)
+            m_fit = int(s_fit_total / 60)
+            s_fit = int(s_fit_total % 60)
+            print('Done fitting model. Took %dm%ds.' % (m_fit, s_fit))
             
             
             self.svm_histograms = train_im_histograms
             self.svm_labels = train_im_labels
             self.SVM = svm
+
+            end = time()
+            s_total = int(end - start)
+            m = int(s_total / 60)
+            s = s_total % 60
+            print('Done training SVM model. Took %dm%ds.' % (m, s))
             return True
         
         except Exception as e:
@@ -71,11 +88,21 @@ class Model(object):
             
     
     def get_histograms(self, ims):
+        print('Making image BOVW histograms...')
+
+        start = time()
         histograms = []
         for im in ims:
             histogram, _ = extract_features(im, self.BOVW, self.descriptor_extractor)
             histograms.append(histogram)
-        return np.vstack(histograms)
+        vstacked = np.vstack(histograms)
+        
+        end = time()
+        s_total = int(end - start)
+        m = int(s_total / 60)
+        s = s_total % 60
+        print('Done making histograms. Took %dm%ds.' % (m, s))
+        return vstacked
 
     
     def localize_w_ESS(self, im):
@@ -90,13 +117,18 @@ class Model(object):
     @staticmethod
     def get_descriptors(ims, descriptor_extractor):
         print('Processing image descriptors...')
-        count = 0
-        for im in ims:
-            if count % 10 == 0:
-                print(count)
+
+        start = time()
+        n = int(len(ims) / 20)
+        for i, im in enumerate(ims):
+            if i % n == 0:
+                print(i)
             yield descriptor_extractor.detectAndCompute(im, None)
-            count += 1
-        print('Done processing image descriptors.')
+        end = time()
+        s_total = int(end - start)
+        m = int(s_total / 60)
+        s = s_total % 60
+        print('Done processing image descriptors. Took %dm%ds.' % (m, s))
         
         
     def save_model(self, fp):
