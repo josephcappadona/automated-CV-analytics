@@ -119,7 +119,7 @@ class Model(object):
         print('Processing image descriptors...')
 
         start = time()
-        n = int(len(ims) / 20)
+        n = int(len(ims) / 10)
         for i, im in enumerate(ims):
             if i % n == 0:
                 print(i)

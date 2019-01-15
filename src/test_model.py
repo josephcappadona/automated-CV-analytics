@@ -8,6 +8,8 @@ from sklearn.model_selection import train_test_split
 from cv2 import imread
 import numpy as np
 from time import time
+import warnings; warnings.filterwarnings('ignore')
+
 
 def import_images(im_fps):
     # TODO: add support for color
@@ -16,7 +18,7 @@ def import_images(im_fps):
 
     start = time()
     ims = []
-    n = int(len(im_fps) / 20)
+    n = int(len(im_fps) / 10)
     for i, im_fp in enumerate(im_fps):
         if i % n == 0:
             print(i)
