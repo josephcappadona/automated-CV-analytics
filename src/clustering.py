@@ -21,11 +21,12 @@ def get_optimal_clustering(data_to_cluster, cluster_sizes=[1,2,4,8,16,32,64,128,
         models[k] = kmeans
         scores.append(score)
     cluster_score_data = np.stack((cluster_sizes, scores), axis=-1)
-    k = get_knee_point(cluster_score_data, show=show)
 
     if len(cluster_sizes) > 1:
+        k = get_knee_point(cluster_score_data, show=show)
         print('Optimal k: %d' % k)
     else:
+        k = cluster_sizes[0]
         print('Clusters found.')
     return models[k], k
 

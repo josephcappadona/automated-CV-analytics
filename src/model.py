@@ -17,12 +17,11 @@ class Model(object):
         self.descriptor_extractor = descriptor_extractor
         
         
-    def BOVW_create(self, im_fps, k=None, show=True):
+    def BOVW_create(self, ims, k=None, show=True):
 
         try:
             print('Creating BOVW...')
-            print('Total images to process: %d' % len(im_fps))
-            ims = self.import_images(im_fps)
+            print('Total images to process: %d' % len(ims))
             
             kps, des_lists = zip(*self.get_descriptors(ims, self.descriptor_extractor))
             all_descriptors = [des for des_list in des_lists for des in des_list]
@@ -30,7 +29,7 @@ class Model(object):
             if not k:
                 bovw, k = clustering.get_optimal_clustering(all_descriptors, show=show)
             else:
-                bovw, k = clustering.get_optimal_clustering(all_descriptors, cluster_sizes=[k], show=show)
+                bovw, k = clustering.get_optimal_clustering(all_descriptors, cluster_sizes=k, show=show)
 
             self.BOVW = bovw
             return True
@@ -40,21 +39,18 @@ class Model(object):
             return False
     
     
-    def SVM_train(self, im_fps):
+    def SVM_train(self, train_ims, train_im_labels):
         
         try:
-            ims = self.import_images(im_fps)
-
-            histograms = self.get_histograms(ims)
-            labels = self.get_labels(im_fps)
+            train_im_histograms = self.get_histograms(train_ims)
             
             # TODO: find optimal C;   TODO: support different kernels
             svm = OneVsRestClassifier(SVC(kernel='linear', C=0.1))
-            svm.fit(histograms, labels)
+            svm.fit(train_im_histograms, train_im_labels)
             
             
-            self.svm_histograms = histograms
-            self.svm_labels = labels
+            self.svm_histograms = train_im_histograms
+            self.svm_labels = train_im_labels
             self.SVM = svm
             return True
         
@@ -62,16 +58,16 @@ class Model(object):
             print(e)
             return False
         
-    def SVM_predict(self, im_fps):
+    def SVM_predict(self, test_ims):
         
         try:
-            test_ims = self.import_images(im_fps)
             test_histograms = self.get_histograms(test_ims)
             return self.SVM.predict(test_histograms)
         
         except Exception as e:
             print('ERROR: %s' % e)
-            return None
+            #return None
+            raise(e)
             
     
     def get_histograms(self, ims):
@@ -80,10 +76,7 @@ class Model(object):
             histogram, _ = extract_features(im, self.BOVW, self.descriptor_extractor)
             histograms.append(histogram)
         return np.vstack(histograms)
-    
-    def get_labels(self, im_fps):       
-        text_labels = np.array([im_fp.split('/')[-1].split('.')[0] for im_fp in im_fps]) # .../FD.6.png -> FD
-        return text_labels
+
     
     def localize_w_ESS(self, im):
         
@@ -93,11 +86,6 @@ class Model(object):
         bounding_box = ESS(im, f_hat, SAT)
         return bounding_box
     
-
-    @staticmethod
-    def import_images(im_fps):
-        for im_fp in im_fps:
-            yield imread(im_fp, 0) # TODO: add support for color
 
     @staticmethod
     def get_descriptors(ims, descriptor_extractor):

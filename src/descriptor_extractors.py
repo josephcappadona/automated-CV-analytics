@@ -6,7 +6,7 @@ from cv2 import ORB_create
 sift = SIFT_create(nfeatures=5000, contrastThreshold=0.01, edgeThreshold=20, sigma=1.6)
 
 # https://docs.opencv.org/3.4.2/d5/df7/classcv_1_1xfeatures2d_1_1SURF.html
-surf = cv2.xfeatures2d.SURF_create()
+surf = SURF_create()
 
 # https://docs.opencv.org/3.4.2/db/d95/classcv_1_1ORB.html
 orb = ORB_create(5000, edgeThreshold=10, patchSize=10, scaleFactor=1.2, nlevels=8)
