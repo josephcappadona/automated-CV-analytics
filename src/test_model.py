@@ -9,41 +9,11 @@ from cv2 import imread
 import numpy as np
 from time import time
 import warnings; warnings.filterwarnings('ignore')
+from utils import import_images, get_labels_from_fps, get_score
 
 
-def import_images(im_fps):
-    # TODO: add support for color
-    
-    print('Total images: %d' % len(im_fps))
 
-    start = time()
-    ims = []
-    n = int(len(im_fps) / 10)
-    for i, im_fp in enumerate(im_fps):
-        if i % n == 0:
-            print(i)
-        ims.append(imread(im_fp, 0))
-    end = time()
-
-    s_total = int(end - start)
-    m = int(s_total / 60)
-    s = s_total % 60
-    print('Import took %dm%ds.' % (m, s))
-
-    return ims
-
-def get_labels_from_fps(im_fps):
-    text_labels = np.array([im_fp.split('/')[-1].split('.')[0] for im_fp in im_fps]) # .../FD.6.png -> FD
-    return text_labels
-    
-def get_score(Y, Y_hat):
-    if len(Y) != len(Y_hat):
-        raise ValueError
-    return sum([1 if y == y_hat else 0 for y, y_hat in zip(Y, Y_hat)]) / len(Y)
-
-
-# parse_args -> -o model_output_fp, -d data_dir, -m model_input_fp, 
-
+# TODO: parse_args -> -o model_output_fp, -d data_dir, -m model_input_fp, 
 
 if len(argv) == 2:
     print('Creating new model...')
