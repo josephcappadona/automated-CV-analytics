@@ -44,7 +44,6 @@ class Model(object):
         
         try:
             print('Training SVM decision model...')
-            sw_train = Stopwatch(); sw_train.start()
 
             train_im_histograms = get_histograms(train_ims, self.BOVW, self.descriptor_extractor)
             
@@ -56,9 +55,7 @@ class Model(object):
             self.svm_histograms = train_im_histograms
             self.svm_labels = train_im_labels
             self.SVM = svm
-
-            sw_train.stop()
-            print('Done training SVM model. Took %s.' % sw_train.format_str())
+            
             return True
         
         except Exception as e:
