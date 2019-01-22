@@ -4,7 +4,7 @@ import numpy as np
 def extract_features(im, cluster_model, descriptor_extractor, n_bins=3, mask=None):
     
     h, w = im.shape[:2]
-    cluster_matrix = -np.ones((h, w), dtype=np.uint8)
+    cluster_matrix = -np.ones((h, w), dtype=np.int16)
     bovw_histogram = np.zeros((cluster_model.n_clusters), dtype=np.uint8)
     
     keypoints, descriptors = descriptor_extractor.detectAndCompute(im, mask=mask)
