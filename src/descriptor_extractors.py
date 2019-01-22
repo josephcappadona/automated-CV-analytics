@@ -9,4 +9,5 @@ from cv2 import ORB_create
 #surf = SURF_create()
 
 # https://docs.opencv.org/3.4.2/db/d95/classcv_1_1ORB.html
-orb = ORB_create(5000, edgeThreshold=10, patchSize=10, scaleFactor=1.2, nlevels=8)
+def orb_create():
+    return ORB_create(5000, edgeThreshold=10, patchSize=10, scaleFactor=1.2, nlevels=8)

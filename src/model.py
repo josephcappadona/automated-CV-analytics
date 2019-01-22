@@ -1,4 +1,3 @@
-from cv2 import imread
 import pickle
 import numpy as np
 import clustering
@@ -10,13 +9,14 @@ from features import extract_features
 from f_hat import build_summed_area_table, f_hat
 from ess import ESS
 from time import time
-from utils import get_descriptors, Stopwatch, train
+from utils import get_descriptors, get_histograms, Stopwatch, train
 
 
 class Model(object):
     
-    def __init__(self, descriptor_extractor):
-        self.descriptor_extractor = descriptor_extractor
+    def __init__(self, descriptor_extractor_creator):
+        self.descriptor_extractor_creator = descriptor_extractor_creator
+        self.descriptor_extractor = descriptor_extractor_creator()
         
         
     def BOVW_create(self, ims, k=None, show=True):
@@ -25,7 +25,7 @@ class Model(object):
             print('Creating BOVW...')
             print('Total images to process: %d' % len(ims))
             
-            descriptors = zip(*get_descriptors(ims, self.descriptor_extractor))
+            descriptors = get_descriptors(ims, self.descriptor_extractor)
             
             if k:
                 bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=k, show=show)
@@ -78,6 +78,7 @@ class Model(object):
         
         
     def save_model(self, fp):
+        self.descriptor_extractor = None
         try:
             pickle.dump(self, open(fp, 'w+b'))
             return True
@@ -87,5 +88,7 @@ class Model(object):
 
     @staticmethod
     def import_model(model_fp):
-        return pickle.load(model_fp)
+        model = pickle.load(open(model_fp, 'rb'))
+        model.descriptor_extractor = model.descriptor_extractor_creator()
+        return model
 

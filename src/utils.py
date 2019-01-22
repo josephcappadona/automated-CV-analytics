@@ -1,19 +1,22 @@
-from time import time
+import time
+from cv2 import imread
+import numpy as np
+from features import extract_features
 
 
 class Stopwatch(object):
     
     def __init__(self):
-        self.start = None
+        self.start_ = None
         self.end = None
         self.duration = 0
     
     def start(self):
-        self.start = time()
+        self.start_ = time.time()
         
     def stop(self):
-        self.end = time()
-        self.duration += self.end - self.start
+        self.end = time.time()
+        self.duration += self.end - self.start_
     
     def format_str(self):
         m = int(self.duration / 60); m_str = ('%dm' % m) if m > 0 else ''
