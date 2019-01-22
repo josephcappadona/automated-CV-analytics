@@ -54,7 +54,7 @@ else:
 
 print('Predicting...')
 y_hat = m.SVM_predict(X_test)
-print(get_score(y_test, y_hat))
+print('Accuracy (test set): %d' % get_score(y_test, y_hat))
 
 import code; code.interact(local=locals())
 
