@@ -14,9 +14,9 @@ from utils import get_descriptors, get_histograms, Stopwatch, train
 
 class Model(object):
     
-    def __init__(self, descriptor_extractor_creator):
-        self.descriptor_extractor_creator = descriptor_extractor_creator
-        self.descriptor_extractor = descriptor_extractor_creator()
+    def __init__(self, descriptor_extractor_create):
+        self.descriptor_extractor_creator = descriptor_extractor_create
+        self.descriptor_extractor = descriptor_extractor_create()
         
         
     def BOVW_create(self, ims, k=None, show=True):
@@ -77,10 +77,12 @@ class Model(object):
         return bounding_box
         
         
-    def save_model(self, fp):
-        self.descriptor_extractor = None
+    def save(self, fp):
+        d_e = self.descriptor_extractor
+        self.descriptor_extractor = None # to prevent pickle error
         try:
             pickle.dump(self, open(fp, 'w+b'))
+            self.descriptor_extractor = d_e # reset, in case we want to continue using model
             return True
         except Exception as e:
             print(e)
@@ -89,6 +91,6 @@ class Model(object):
     @staticmethod
     def import_model(model_fp):
         model = pickle.load(open(model_fp, 'rb'))
-        model.descriptor_extractor = model.descriptor_extractor_creator()
+        model.descriptor_extractor = model.descriptor_extractor_create()
         return model
 
