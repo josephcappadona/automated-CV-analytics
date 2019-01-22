@@ -1,5 +1,5 @@
 from model import Model
-from descriptor_extractors import orb
+from descriptor_extractors import orb_create
 from random import shuffle
 from sys import argv
 from glob import iglob
@@ -17,7 +17,6 @@ from utils import import_images, get_labels_from_fps, get_score
 
 if len(argv) == 2:
     print('Creating new model...')
-    m = Model(orb)
     
     im_dir = argv[1]
     im_fps = list(iglob(im_dir + '/*_snippets/*.png'))
@@ -27,7 +26,9 @@ if len(argv) == 2:
     y = get_labels_from_fps(im_fps)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
     
-    m.BOVW_create(X_train, k=[128, 256, 512, 1024], show=False)
+    print('Building model...')
+    m = Model(orb_create)
+    m.BOVW_create(X_train, k=[128], show=False)
     m.SVM_train(X_train, y_train)
     
 elif len(argv) == 3:
