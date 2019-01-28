@@ -81,6 +81,7 @@ def build_summed_area_table(cluster_matrix, svm_model):
             
             c_i = cluster_matrix[y, x]
             w_i = dual_coef.dot(sv[:,c_i]) if c_i != -1 else 0
+            # rbf decision function: https://stats.stackexchange.com/questions/86207/how-to-construct-the-feature-weight-vector-or-decision-boundary-from-a-linear
             # w_i = 0  =>  no descriptor at cluster_matrix[y,x]
             
             if w_i > 0:
