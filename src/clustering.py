@@ -1,6 +1,7 @@
 from math import sqrt, log
 from time import time
 from sklearn.cluster import KMeans, MiniBatchKMeans
+from utils import Stopwatch
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -14,18 +15,15 @@ def get_optimal_clustering(data_to_cluster, cluster_sizes=[1,2,4,8,16,32,64,128,
     models = {}
     scores = []
     for k in cluster_sizes:
-        start = time()
+        sw = Stopwatch(); sw.start()
 
         print('k: %s' % k, end='', flush=True)
         kmeans = MiniBatchKMeans(n_clusters=k)
         kmeans.fit(data_to_cluster)
         score = log(kmeans.inertia_)
 
-        end = time()
-        s_total = int(end - start)
-        m = int(s_total / 60)
-        s = s_total % 60
-        print(', log(inertia): %f, time: %dm%ds' % (score, m, s))
+        sw.stop()
+        print(', log(inertia): %.5f, time: %s' % (score, sw.format_str()))
 
         models[k] = kmeans
         scores.append(score)
