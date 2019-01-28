@@ -15,6 +15,11 @@ from utils import import_images, get_labels_from_fps, get_score
 
 # TODO: parse_args -> -o model_output_fp, -d data_dir, -m model_input_fp, 
 
+usage = "\nUSAGE:  python test_model.py SNIPPET_DIR [MODEL.PKL]\n"
+if len(argv) < 2 or len(argv) > 3:
+    print(usage)
+    exit()
+
 if len(argv) == 2:
     print('Creating new model...')
     
