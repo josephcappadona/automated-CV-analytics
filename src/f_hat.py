@@ -70,14 +70,18 @@ def get_union_and_intersection_bounding_boxes(bounds):
 # used to quickly calculate the sums of histograms over areas
 def build_summed_area_table(cluster_matrix, svm_model):
     
-    h, w = feature_matrix.shape[:2]
-    SAT = np.zeros((h, w, 2), dtype=np.uint8)
+    h, w = cluster_matrix.shape[:2]
+    SAT = np.zeros((h, w, 2), dtype=np.float)
+    
+    dual_coef = svm_model.dual_coef_
+    sv = svm_model.support_vectors_
     
     for x in range(w):
         for y in range(h):
             
             c_i = cluster_matrix[y, x]
-            w_i = svm_model.coef_.dot(svm_model.support_vectors[:,:,c_i]) if c_i != -1 else 0
+            w_i = dual_coef.dot(sv[:,c_i]) if c_i != -1 else 0
+            # w_i = 0  =>  no descriptor at cluster_matrix[y,x]
             
             if w_i > 0:
                 SAT[y, x, 0] = w_i

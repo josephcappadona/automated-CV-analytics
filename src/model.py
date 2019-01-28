@@ -70,8 +70,12 @@ class Model(object):
 
     def localize_w_ESS(self, im):
         
-        _, cluster_matrix = extract_features(im, self.BOVW, self.descriptor_extractor)
-        SAT = build_summed_area_table(cluster_matrix, self.SVM)
+        histogram, cluster_matrix = extract_features(im, self.BOVW, self.descriptor_extractor)
+        
+        y_hat_text = self.SVM.predict([histogram])[0]
+        y_hat_index = self.SVM.label_binarizer_.transform([y_hat_text]).indices[0]
+        
+        SAT = build_summed_area_table(cluster_matrix, self.SVM.estimators_[y_hat_index])
         
         bounding_box = ESS(im, f_hat, SAT)
         return bounding_box
