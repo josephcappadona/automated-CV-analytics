@@ -64,9 +64,9 @@ elif model_input_fp:
     y_test = get_labels_from_fps(im_fps)
     
 if test_size:
-    print('Predicting...')
+    print('Testing...')
     y_hat = m.SVM_predict(X_test)
     print('Accuracy (test set): %.3f' % get_score(y_test, y_hat))
 
-import code; code.interact(local=locals())
+#import code; code.interact(local=locals())
 
