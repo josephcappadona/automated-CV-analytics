@@ -50,11 +50,18 @@ def extract_color_info(im, keypoints, n_bins_per_color=4, mask=None):
     return color_histogram, color_matrix
 
 
-def extract_features(im, cluster_model, descriptor_extractor, n_bins_per_color=4, mask=None):
+def extract_features(im, cluster_model, descriptor_extractor, n_bins_per_color=4, mask=None, consider_descriptors=True, consider_colors=True):
 
     keypoints, descriptors = descriptor_extractor.detectAndCompute(im, mask=mask)
 
-    bovw_histogram, cluster_matrix = extract_bovw_info(im, cluster_model, keypoints, descriptors, mask=mask)
-    color_histogram, color_matrix = extract_color_info(im, keypoints, n_bins_per_color=n_bins_per_color, mask=mask)
+    if consider_descriptors:
+        bovw_histogram, cluster_matrix = extract_bovw_info(im, cluster_model, keypoints, descriptors, mask=mask)
+    else:
+        bovw_histogram, cluster_matrix = None, None
+
+    if consider_colors:
+        color_histogram, color_matrix = extract_color_info(im, keypoints, n_bins_per_color=n_bins_per_color, mask=mask)
+    else:
+        color_histogram, color_matrix = None, None
 
     return ((bovw_histogram, cluster_matrix), (color_histogram, color_matrix))

@@ -79,7 +79,9 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=No
                              BOVW,
                              descriptor_extractor,
                              n_bins_per_color=n_bins_per_color,
-                             mask=mask)
+                             mask=mask,
+                             consider_descriptors=consider_descriptors,
+                             consider_colors=consider_colors)
 
         if consider_descriptors and consider_colors:
             complex_histogram = np.hstack((bovw_histogram, color_histogram))
@@ -96,7 +98,7 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=No
     
     
 def train(classifier, X, y):
-    print('Fitting model...')
+    print('Fitting SVM model...')
     sw = Stopwatch(); sw.start()
     
     classifier.fit(X, y)

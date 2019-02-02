@@ -17,6 +17,8 @@ class Model(object):
     def __init__(self, descriptor_extractor_create):
         self.descriptor_extractor_creator = descriptor_extractor_create
         self.descriptor_extractor = descriptor_extractor_create()
+        self.BOVW = None
+        self.SVM = None
         
         
     def BOVW_create(self, ims, k=None, show=True):
@@ -35,7 +37,7 @@ class Model(object):
         
     
     def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True):
-        print('Training SVM decision model...')
+        print('\nTraining SVM decision model...')
 
         train_im_histograms = get_histograms(train_ims,
                                              self.BOVW,
