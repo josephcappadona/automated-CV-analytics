@@ -23,8 +23,9 @@ class Stopwatch(object):
         s = int(self.duration % 60); s_str = '%ds' % s
         return m_str + s_str
 
+def get_directory(filepath):
+    return '/'.join(filepath.split('/')[:-1])
 
-# TODO: add support for color
 def import_images(im_fps): 
     print('Importing images...\nTotal images: %d' % len(im_fps))
 

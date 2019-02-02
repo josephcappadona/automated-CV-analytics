@@ -7,25 +7,37 @@ from pickle import load
 from sklearn.model_selection import train_test_split
 from cv2 import imread
 import numpy as np
-from time import time
+from time import localtime, strftime
 import warnings; warnings.filterwarnings('ignore')
-from utils import import_images, get_labels_from_fps, get_score
+from utils import get_directory, import_images, get_labels_from_fps, get_score
+from args import parse_args
 
 
-
-# TODO: parse_args -> -o model_output_fp, -d data_dir, -m model_input_fp, 
-
-usage = "\nUSAGE:  python test_model.py SNIPPET_DIR [MODEL.PKL]\n"
-if len(argv) < 2 or len(argv) > 3:
+usage = "\nUSAGE:  python test_model.py -d DATA_PATH [-o MODEL_OUTPUT_FP | -m MODEL_INPUT_FP] [--consider_descriptors 0/1] [--consider_colors 0/1]\n\nDefault values if argument not specified:\n-o \"output/model %Y-%m-%d %H:%M:%S.pkl\"\n--consider_descriptors 1\n--consider_colors 1\n"
+if len(argv) == 1:
     print(usage)
     exit()
 
-if len(argv) == 2:
+
+args = parse_args(argv)
+
+im_dir = args['d']
+model_output_fp = args['o'] if args['o'] \
+                      else ('output/model %s.pkl' % \
+                            strftime('%Y-%m-%d %H:%M:%S', localtime()))
+model_input_fp = args['m']
+
+consider_descriptors = bool(int(args['consider_descriptors'])) \
+                           if args['consider_descriptors'] else True
+consider_colors = bool(int(args['consider_colors'])) \
+                      if args['consider_colors'] else True
+
+
+im_fps = iglob(im_dir + '/*_snippets/*.png')
+
+if not model_input_fp:
     print('Creating new model...')
-    
-    im_dir = argv[1]
-    im_fps = list(iglob(im_dir + '/*_snippets/*.png'))
-    
+     
     print('Loading data...')
     X = import_images(im_fps)
     y = get_labels_from_fps(im_fps)
@@ -33,33 +45,26 @@ if len(argv) == 2:
     
     print('Building model...')
     m = Model(orb_create)
-    m.BOVW_create(X_train, k=[128], show=False)
+    m.BOVW_create(X_train, k=[32], show=True)
     m.SVM_train(X_train, y_train)
+
+    print('Saving model...')
+    model_output_dir = get_directory(model_output_fp)
+    makedirs(model_output_dir, exist_ok=True)
+    m.save(model_output_fp)
     
-elif len(argv) == 3:
+elif model_input_fp:
     print('Loading model from file...')
-    try:
-        model_fp = argv[2]
-        m = load(open(model_fp, 'rb'))
-    except Exception as e:
-        print('ERROR: Could not load model (%s) - %s' % (model_fp, e))
-        exit()
-        
-    im_dir = argv[1]
-    im_fps = list(iglob(im_dir + '/*_snippets/*.png'))
-    
+    m = load(open(model_input_fp, 'rb'))
+
     print('Loading data...')
     X_test = import_images(im_fps)
     y_test = get_labels_from_fps(im_fps)
     
-else:
-    print('USAGE:  python test_model.py DATA_PATH [MODEL_PATH]\n')
-    exit()
-
 
 print('Predicting...')
 y_hat = m.SVM_predict(X_test)
-print('Accuracy (test set): %d' % get_score(y_test, y_hat))
+print('Accuracy (test set): %.3f' % get_score(y_test, y_hat))
 
 import code; code.interact(local=locals())
 
