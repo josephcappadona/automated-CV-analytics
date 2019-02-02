@@ -34,6 +34,7 @@ consider_colors = bool(int(args['consider_colors'])) \
                       if args['consider_colors'] else True
 test_size = float(args['test_size']) if args['test_size'] else 0.80
 
+
 im_fps = iglob(im_dir + '/*_snippets/*.png')
 
 if not model_input_fp:
