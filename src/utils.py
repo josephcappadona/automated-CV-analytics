@@ -60,7 +60,13 @@ def get_descriptors(ims, descriptor_extractor):
 
     
 def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=None, consider_descriptors=True, consider_colors=True):
-    print('Making BOVW histograms...')
+
+    if not consider_descriptors and not consider_colors:
+        raise ValueError("Histogram is empty (neither descriptors nor colors are being considered).")
+
+    features_string = '+'.join((['BOVW'] if consider_descriptors else []) +
+                               (['colors'] if consider_colors else []))
+    print('Making %s histograms...' % features_string)
     sw = Stopwatch(); sw.start()
 
     histograms = []
@@ -81,8 +87,6 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=No
             histograms.append(bovw_histogram)
         elif consider_colors:
             histograms.append(color_histogram)
-        else:
-            raise ValueError("Histogram is empty (neither descriptors nor colors are being considered).")
     vstacked = np.vstack(histograms)
 
     sw.stop()
