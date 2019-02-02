@@ -20,57 +20,58 @@ class Model(object):
         
         
     def BOVW_create(self, ims, k=None, show=True):
-
-        try:
-            print('Creating BOVW...')
-            print('Total images to process: %d' % len(ims))
-            
-            descriptors = get_descriptors(ims, self.descriptor_extractor)
-            
-            if k:
-                bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=k, show=show)
-            else:
-                bovw = clustering.get_optimal_clustering(descriptors, show=show)
-
-            self.BOVW = bovw
-            return True
+        print('Creating BOVW...')
+        print('Total images to process: %d' % len(ims))
         
-        except Exception as e:
-            print('\nERROR: Could not create BOVW (%s)\n' % e)
-            return False
+        descriptors = get_descriptors(ims, self.descriptor_extractor)
+        
+        if k:
+            bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=k, show=show)
+        else:
+            bovw = clustering.get_optimal_clustering(descriptors, show=show)
+
+        self.BOVW = bovw
+        return True
+        
     
-    
-    def SVM_train(self, train_ims, train_im_labels):
-        
-        try:
-            print('Training SVM decision model...')
+    def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True):
+        print('Training SVM decision model...')
 
-            train_im_histograms = get_histograms(train_ims, self.BOVW, self.descriptor_extractor)
-            
-            # TODO: find optimal C;   TODO: support different kernels
-            svm = OneVsRestClassifier(SVC(kernel='linear', C=0.1))
-            train(svm, train_im_histograms, train_im_labels)
-            
-            
-            self.svm_histograms = train_im_histograms
-            self.svm_labels = train_im_labels
-            self.SVM = svm
-            
-            return True
+        train_im_histograms = get_histograms(train_ims,
+                                             self.BOVW,
+                                             self.descriptor_extractor,
+                                             consider_descriptors=consider_descriptors,
+                                             consider_colors=consider_colors)
         
-        except Exception as e:
-            print('\nERROR: Could not train SVM model (%s)\n' % e)
-            return False
+        # TODO: find optimal C;   TODO: support different kernels
+        svm = OneVsRestClassifier(SVC(kernel='linear', C=0.1))
+        train(svm, train_im_histograms, train_im_labels)
         
-    def SVM_predict(self, test_ims):
         
-        test_histograms = get_histograms(test_ims, self.BOVW, self.descriptor_extractor)
+        self.svm_histograms = train_im_histograms
+        self.svm_labels = train_im_labels
+        self.SVM = svm    
+        return True
+        
+        
+    def SVM_predict(self, test_ims, masks=None, consider_descriptors=True, consider_colors=True):
+        
+        test_histograms = get_histograms(test_ims,
+                                         self.BOVW,
+                                         self.descriptor_extractor,
+                                         masks=masks,
+                                         consider_descriptors=consider_descriptors,
+                                         consider_colors=consider_colors)
         return self.SVM.predict(test_histograms)
             
 
-    def localize_w_ESS(self, im):
+    def localize_w_ESS(self, im, mask=None):
         
-        histogram, cluster_matrix = extract_features(im, self.BOVW, self.descriptor_extractor)
+        (bovw_histogram, cluster_matrix), (color_histogram, color_matrix) = \
+            extract_features(im,
+                             self.BOVW,
+                             self.descriptor_extractor,
+                             mask=mask)
         
         y_hat_text = self.SVM.predict([histogram])[0]
         y_hat_index = self.SVM.label_binarizer_.transform([y_hat_text]).indices[0]

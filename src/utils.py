@@ -34,10 +34,10 @@ def import_images(im_fps):
     for i, im_fp in enumerate(im_fps):
         if i % n == 0:
             print(i)
-        ims.append(imread(im_fp, 0))
+        ims.append(imread(im_fp))
     sw.stop()
     
-    print('Import took %s.' % sw.format_str())
+    print('Import took %s.\n\n' % sw.format_str())
     return ims
 
 
@@ -55,22 +55,38 @@ def get_descriptors(ims, descriptor_extractor):
         
     sw.stop()
     print('Total number of descriptors: %d' % len(descriptors))
-    print('Done processing image descriptors. Took %s.' % sw.format_str())
+    print('Done processing image descriptors. Took %s.\n\n' % sw.format_str())
     return descriptors
 
     
-def get_histograms(ims, BOVW, descriptor_extractor):
+def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=None, consider_descriptors=True, consider_colors=True):
     print('Making BOVW histograms...')
-
     sw = Stopwatch(); sw.start()
+
     histograms = []
-    for im in ims:
-        histogram, _ = extract_features(im, BOVW, descriptor_extractor)
-        histograms.append(histogram)
+    for i, im in enumerate(ims):
+        mask = masks[i] if masks else None
+
+        (bovw_histogram, _), (color_histogram, _) = \
+            extract_features(im,
+                             BOVW,
+                             descriptor_extractor,
+                             n_bins_per_color=n_bins_per_color,
+                             mask=mask)
+
+        if consider_descriptors and consider_colors:
+            complex_histogram = np.hstack((bovw_histogram, color_histogram))
+            histograms.append(complex_histogram)
+        elif consider_descriptors:
+            histograms.append(bovw_histogram)
+        elif consider_colors:
+            histograms.append(color_histogram)
+        else:
+            raise ValueError("Histogram is empty (neither descriptors nor colors are being considered).")
     vstacked = np.vstack(histograms)
+
     sw.stop()
-    
-    print('Done making histograms. Took %s.' % sw.format_str())
+    print('Done making histograms. Took %s.\n\n' % sw.format_str())
     return vstacked
     
     
@@ -81,7 +97,7 @@ def train(classifier, X, y):
     classifier.fit(X, y)
     
     sw.stop()
-    print('Done fitting model. Took %s.' % sw.format_str())
+    print('Done fitting model. Took %s.\n\n' % sw.format_str())
     
 
 def get_labels_from_fps(im_fps):
