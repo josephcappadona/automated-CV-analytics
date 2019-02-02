@@ -23,7 +23,7 @@ class Model(object):
         
     def BOVW_create(self, ims, k=None, show=True):
         print('Creating BOVW...')
-        print('Total images to process: %d' % len(ims))
+        print('Total images to process (in training set): %d' % len(ims))
         
         descriptors = get_descriptors(ims, self.descriptor_extractor)
         
