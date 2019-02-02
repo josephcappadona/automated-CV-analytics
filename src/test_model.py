@@ -57,7 +57,7 @@ if not model_input_fp:
     print('Building model...\n')
     m = Model(orb_create)
     if consider_descriptors:
-        m.BOVW_create(X_train, k=[32], show=True)
+        m.BOVW_create(X_train, k=[32, 64, 128, 256, 512], show=True)
     m.SVM_train(X_train,
                 y_train,
                 consider_descriptors=consider_descriptors,
