@@ -31,10 +31,10 @@ def get_optimal_clustering(data_to_cluster, cluster_sizes=[1,2,4,8,16,32,64,128,
 
     if len(cluster_sizes) > 1:
         k = get_knee_point(cluster_score_data, show=show)
-        print('Optimal k: %d' % k)
+        print('Optimal k: %d\n\n' % k)
     else:
         k = cluster_sizes[0]
-        print('Clusters found.')
+        print('Clusters found.\n\n')
     return models[k]
 
 
