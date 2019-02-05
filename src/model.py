@@ -15,7 +15,7 @@ from utils import get_descriptors, get_histograms, Stopwatch, train
 class Model(object):
     
     def __init__(self, descriptor_extractor_create):
-        self.descriptor_extractor_creator = descriptor_extractor_create
+        self.descriptor_extractor_create = descriptor_extractor_create
         self.descriptor_extractor = descriptor_extractor_create()
         self.BOVW = None
         self.SVM = None
@@ -37,6 +37,9 @@ class Model(object):
     
     def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True):
 
+        self.consider_descriptors = consider_descriptors
+        self.consider_colors = consider_colors
+
         train_im_histograms = get_histograms(train_ims,
                                              self.BOVW,
                                              self.descriptor_extractor,
@@ -54,14 +57,14 @@ class Model(object):
         return True
         
         
-    def SVM_predict(self, test_ims, masks=None, consider_descriptors=True, consider_colors=True):
+    def SVM_predict(self, test_ims, masks=None):
         
         test_histograms = get_histograms(test_ims,
                                          self.BOVW,
                                          self.descriptor_extractor,
                                          masks=masks,
-                                         consider_descriptors=consider_descriptors,
-                                         consider_colors=consider_colors)
+                                         consider_descriptors=self.consider_descriptors,
+                                         consider_colors=self.consider_colors)
         return self.SVM.predict(test_histograms)
             
 
@@ -82,19 +85,16 @@ class Model(object):
         return bounding_box
         
         
-    def save(self, fp):
+    def save_model(self, fp):
+
         d_e = self.descriptor_extractor
         self.descriptor_extractor = None # to prevent pickle error
-        try:
-            pickle.dump(self, open(fp, 'w+b'))
-            self.descriptor_extractor = d_e # reset, in case we want to continue using model
-            return True
-        except Exception as e:
-            print(e)
-            return False
+        
+        pickle.dump(self, open(fp, 'w+b'))
+        self.descriptor_extractor = d_e # reset, in case we want to continue using model
 
     @staticmethod
-    def import_model(model_fp):
+    def load_model(model_fp):
         model = pickle.load(open(model_fp, 'rb'))
         model.descriptor_extractor = model.descriptor_extractor_create()
         return model
