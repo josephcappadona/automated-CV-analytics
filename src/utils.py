@@ -67,7 +67,7 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=No
 
     features_string = '+'.join((['BOVW'] if consider_descriptors else []) +
                                (['colors'] if consider_colors else []))
-    print('Making %s histograms...' % features_string)
+    print('Making %d %s histograms...' % (len(ims), features_string))
     sw = Stopwatch(); sw.start()
 
     histograms = []
@@ -116,3 +116,14 @@ def get_score(Y, Y_hat):
     if len(Y) != len(Y_hat):
         raise ValueError
     return sum([1 if y == y_hat else 0 for y, y_hat in zip(Y, Y_hat)]) / len(Y)
+
+
+from collections import defaultdict
+def parse_args(args):
+    args_dict = defaultdict(str)
+    for i, arg in enumerate(args):
+        if arg[0] == '-':
+            prefix = arg.strip('-')
+            suffix = args[i+1]
+            args_dict[prefix] = suffix
+    return args_dict
