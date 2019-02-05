@@ -21,7 +21,7 @@ class Model(object):
         self.SVM = None
         
         
-    def BOVW_create(self, ims, k=None, show=True):
+    def BOVW_create(self, ims, k=None, show=False):
         print('Creating BOVW...')
         print('Total images to process (in training set): %d' % len(ims))
         
