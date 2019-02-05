@@ -22,7 +22,6 @@ class Model(object):
         
         
     def BOVW_create(self, ims, k=None, show=False):
-        print('Creating BOVW...')
         print('Total images to process (in training set): %d' % len(ims))
         
         descriptors = get_descriptors(ims, self.descriptor_extractor)
@@ -37,7 +36,6 @@ class Model(object):
         
     
     def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True):
-        print('\nTraining SVM decision model...')
 
         train_im_histograms = get_histograms(train_ims,
                                              self.BOVW,
@@ -46,7 +44,7 @@ class Model(object):
                                              consider_colors=consider_colors)
         
         # TODO: find optimal C;   TODO: support different kernels
-        svm = OneVsRestClassifier(SVC(kernel='linear', C=0.1))
+        svm = OneVsRestClassifier(SVC(kernel='linear', C=100)) # C=100 b/c Chapelle et al
         train(svm, train_im_histograms, train_im_labels)
         
         
