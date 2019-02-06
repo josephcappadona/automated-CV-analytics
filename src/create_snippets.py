@@ -5,7 +5,7 @@ from os.path import isfile, join, exists
 from glob import iglob
 from PIL import Image
 import xml.etree.ElementTree as ET
-from snippet import create_snippet, create_negative_snippets
+from snippets import create_snippet, create_negative_snippets
 
 
 def get_label_fps(dir_):

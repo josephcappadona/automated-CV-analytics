@@ -52,13 +52,25 @@ def get_descriptors(ims, descriptor_extractor):
         if i % n == 0:
             print(i)
         kp, des = descriptor_extractor.detectAndCompute(im, None)
-        descriptors.extend(des)
+        try:
+            descriptors.extend(des)
+        except TypeError:
+            kp, des = kp_and_des_for_blank_image(im, descriptor_extractor)
+            descriptors.extend(des)
         
     sw.stop()
     print('Total number of descriptors: %d' % len(descriptors))
     print('Done processing image descriptors. Took %s.\n\n' % sw.format_str())
     return descriptors
 
+from cv2 import KeyPoint
+def kp_and_des_for_blank_image(im, descriptor_extractor):
+    h, w = im.shape[:2]
+    x, y = (int(w/2), int(h/2))
+    size = 1
+    kp = KeyPoint(x, y, size)
+    des = np.zeros((descriptor_extractor.descriptorSize()), dtype=np.uint8)
+    return [kp], [des]
     
 def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=None, consider_descriptors=True, consider_colors=True):
 

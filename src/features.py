@@ -1,4 +1,5 @@
 import numpy as np
+import utils
 
 
 def extract_bovw_info(im, cluster_model, keypoints, descriptors, n_bins_per_color=4, mask=None):
@@ -53,6 +54,8 @@ def extract_color_info(im, keypoints, n_bins_per_color=4, mask=None):
 def extract_features(im, cluster_model, descriptor_extractor, n_bins_per_color=4, mask=None, consider_descriptors=True, consider_colors=True):
 
     keypoints, descriptors = descriptor_extractor.detectAndCompute(im, mask=mask)
+    if not len(keypoints):
+        keypoints, descriptors = utils.kp_and_des_for_blank_image(im, descriptor_extractor)
 
     if consider_descriptors:
         bovw_histogram, cluster_matrix = extract_bovw_info(im, cluster_model, keypoints, descriptors, mask=mask)

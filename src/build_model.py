@@ -50,7 +50,7 @@ m = model.Model(descriptor_extractors.orb_create)
 
 if consider_descriptors:
     print('Building BOVW...')
-    m.BOVW_create(ims, k=[8, 16, 32, 64, 128], show=False)
+    m.BOVW_create(ims, k=[8, 16, 32, 64], show=False)
 
 print('Training SVM...')
 m.SVM_train(ims,

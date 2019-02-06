@@ -35,4 +35,6 @@ im_labels = utils.get_labels_from_fps(im_fps)
 print('Testing...\n')
 y_hat = m.SVM_predict(ims)
 print('Accuracy: %g\n' % utils.get_score(im_labels, y_hat))
-
+for i, (y, y_) in enumerate(zip(im_labels, y_hat)):
+    if y != y_:
+        print(im_fps[i], (y, y_))
