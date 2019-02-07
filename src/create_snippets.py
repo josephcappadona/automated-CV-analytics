@@ -49,11 +49,11 @@ if __name__ == '__main__':
 
     args = sys.argv
 
-    if len(args) != 2:
-        print('USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR')
+    if len(args) != 3:
+        print('USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR VIDEO_NAME')
         exit(1)
     data_dir = args[1]
-    video_name = data_dir.strip('/').split('/')[-1]
+    video_name = args[2]
 
     label_img_fp_pairs = get_label_img_fp_pairs(data_dir)
     print('%d labeled images found.' % len(label_img_fp_pairs))
@@ -71,4 +71,4 @@ if __name__ == '__main__':
                 count += 1
         n_neg = create_negative_snippets(video_name, im, img_fp, boxes)
         count += n_neg
-    print('%d snippets saved to \'output/%s/\'' % (count, video_name))
+    print('%d snippets saved to \'output/%s/snippets\'' % (count, video_name))

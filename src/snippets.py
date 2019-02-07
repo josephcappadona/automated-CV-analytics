@@ -7,7 +7,7 @@ def create_snippet(video_name, im, box_name, box_coords, output_dir='output'):
 
     box_img = im.copy().crop(box_coords)
 
-    snippets_dir = output_dir + '/' + video_name + '/' + box_name + '_snippets'
+    snippets_dir = output_dir + '/' + video_name + '/snippets/' + box_name
     makedirs(snippets_dir, exist_ok=True)
 
     snippet_id = str(randint(10**7, 10**10))
@@ -15,10 +15,7 @@ def create_snippet(video_name, im, box_name, box_coords, output_dir='output'):
     box_img.save(snippet_fp)
     return True
 
-def create_negative_snippets(video_name, im, im_fp, boxes, output_dir='output'):
-
-    neg_snippets_dir = output_dir + '/' + video_name + '/NEGATIVE_snippets'
-    makedirs(neg_snippets_dir, exist_ok=True)
+def create_negative_snippets(video_name, im, im_fp, boxes, output_dir='output', verbose=False):
 
     occupied = np.zeros(im.size, dtype=np.uint8)
     for box_coords in boxes.values():
@@ -46,8 +43,8 @@ def create_negative_snippets(video_name, im, im_fp, boxes, output_dir='output'):
                 # reduce box size and try again
                 w_box = int(w_box * 0.9)
                 h_box = int(h_box * 0.9)
-                if i == N-1:
-                    print('\tCould not find negative box for label \'%s\' in image \'%s\'.' % (box_name, img_fp))
+                if i == N-1 and verbose:
+                    print('\tCould not find negative box for label \'%s\' in image \'%s\'.\n' % (box_name, im_fp))
                 continue
 
             # found good box!
