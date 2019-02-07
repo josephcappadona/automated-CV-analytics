@@ -1,17 +1,13 @@
-from sys import argv
-from subprocess import call
-from os import listdir, makedirs
-from os.path import isfile, join, exists
+import sys
 import pathlib
-from glob import iglob
-from PIL import Image
+import glob
 import xml.etree.ElementTree as ET
+from PIL import Image
 from snippets import create_snippet, create_negative_snippets
 
 
 def get_label_fps(dir_):
-    #label_fps = [join(dir_, f) for f in iglob('**/*.xml', recursive=True)]
-    label_fps = iglob(dir_ + '/**/*.xml')
+    label_fps = glob.iglob(dir_ + '/**/*.xml')
     return label_fps
 
 def remove_extension(filename):
@@ -51,10 +47,12 @@ def get_boxes(label_fp):
 
 if __name__ == '__main__':
 
-    if len(argv) != 2:
+    args = sys.argv
+
+    if len(args) != 2:
         print('USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR')
         exit(1)
-    data_dir = argv[1]
+    data_dir = args[1]
     video_name = data_dir.strip('/').split('/')[-1]
 
     label_img_fp_pairs = get_label_img_fp_pairs(data_dir)
