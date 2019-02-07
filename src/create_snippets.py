@@ -2,6 +2,7 @@ from sys import argv
 from subprocess import call
 from os import listdir, makedirs
 from os.path import isfile, join, exists
+import pathlib
 from glob import iglob
 from PIL import Image
 import xml.etree.ElementTree as ET
@@ -25,7 +26,8 @@ def get_label_img_fp_pairs(dir_):
         label_fp_base = remove_extension(label_fp)
         matching_img_fp = label_fp_base + '.png'
         
-        label_img_fp_pairs.append((label_fp, matching_img_fp))
+        if pathlib.Path(matching_img_fp).is_file(): # if image file exists
+            label_img_fp_pairs.append((label_fp, matching_img_fp))
 
     return label_img_fp_pairs
 
