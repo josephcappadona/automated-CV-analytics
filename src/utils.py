@@ -1,4 +1,5 @@
 import time
+import math
 from cv2 import imread
 import numpy as np
 from features import extract_features
@@ -19,8 +20,8 @@ class Stopwatch(object):
         self.duration += self.end - self.start_
     
     def format_str(self):
-        m = int(self.duration / 60); m_str = ('%dm' % m) if m > 0 else ''
-        s = int(self.duration % 60); s_str = '%ds' % s
+        m = int(math.round(self.duration / 60)); m_str = ('%dm' % m) if m > 0 else ''
+        s = int(math.round(self.duration % 60)); s_str = '%ds' % s
         return m_str + s_str
 
 def get_directory(filepath):
