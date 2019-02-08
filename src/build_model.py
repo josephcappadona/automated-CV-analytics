@@ -26,6 +26,7 @@ consider_descriptors = bool(int(args['consider_descriptors'])) \
                            if args['consider_descriptors'] else True
 consider_colors = bool(int(args['consider_colors'])) \
                       if args['consider_colors'] else True
+kernel_approx = args['approximation_kernel'] if args['approximation_kernel'] else None
 
 print('\n')
 print('DATA_DIR=%s' % data_dir)
@@ -50,13 +51,14 @@ m = model.Model(descriptor_extractors.orb_create)
 
 if consider_descriptors:
     print('Building BOVW...')
-    m.BOVW_create(ims, k=[8, 16, 32, 64], show=False)
+    m.BOVW_create(ims, k=[8, 16, 32, 64, 128], show=False)
 
 print('Training SVM...')
 m.SVM_train(ims,
             im_labels,
             consider_descriptors=consider_descriptors,
-            consider_colors=consider_colors)
+            consider_colors=consider_colors,
+            kernel_approx=kernel_approx)
 
 print('Saving model...')
 model_output_dir = utils.get_directory(model_output_fp)

@@ -4,6 +4,7 @@ import clustering
 import sklearn
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
+from sklearn.kernel_approximation import RBFSampler, AdditiveChi2Sampler
 from sklearn.multiclass import OneVsRestClassifier
 from features import extract_features
 from f_hat import build_summed_area_table, f_hat
@@ -19,6 +20,7 @@ class Model(object):
         self.descriptor_extractor = descriptor_extractor_create()
         self.BOVW = None
         self.SVM = None
+        self.approx_kernel_map = None
         
         
     def BOVW_create(self, ims, k=None, show=False):
@@ -35,7 +37,7 @@ class Model(object):
         return True
         
     
-    def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True):
+    def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True, kernel_approx=None):
 
         self.consider_descriptors = consider_descriptors
         self.consider_colors = consider_colors
@@ -48,8 +50,29 @@ class Model(object):
         
         # TODO: find optimal C;   TODO: support different kernels
         svm = OneVsRestClassifier(SVC(kernel='linear', C=100)) # C=100 b/c Chapelle et al
+
+        if kernel_approx:
+            if kernel_approx == 'rbf':
+                gamma = 2
+                n_components = len(train_im_histograms[0])*20
+                approx_kernel_map = RBFSampler(gamma=gamma, n_components=n_components)
+                
+                kernel_name = 'RBFSampler'
+                kernel_params = 'gamma=%g, n_components=%d' % (gamma, n_components)
+                
+            elif kernel_approx == 'chi2':
+                sample_steps = 1
+                sample_interval = None
+                approx_kernel_map = AdditiveChi2Sampler(sample_steps=sample_steps, sample_interval=sample_interval)
+                
+                kernel_name = 'AdditiveChi2Sampler'
+                kernel_params = 'sample_steps=%d, sample_interval=%s' % (sample_steps, sample_interval)
+                
+            print('Transforming histograms with %s(%s)...' % (kernel_name, kernel_params))
+            train_im_histograms = approx_kernel_map.fit_transform(train_im_histograms)
+            self.approx_kernel_map = approx_kernel_map
+
         train(svm, train_im_histograms, train_im_labels)
-        
         
         self.svm_histograms = train_im_histograms
         self.svm_labels = train_im_labels
@@ -65,6 +88,8 @@ class Model(object):
                                          masks=masks,
                                          consider_descriptors=self.consider_descriptors,
                                          consider_colors=self.consider_colors)
+        if self.approx_kernel_map:
+            test_histograms = self.approx_kernel_map.transform(test_histograms)
         return self.SVM.predict(test_histograms)
             
 
