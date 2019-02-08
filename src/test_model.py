@@ -1,6 +1,6 @@
 import sys
 import utils
-import glob
+import glob2
 import model
 
 
@@ -23,7 +23,7 @@ print('MODEL_INPUT_FP=\'%s\'' % model_input_fp)
 print('\n\n')
 
 
-im_fps = glob.glob(data_dir + '/*_snippets/*.png')
+im_fps = glob2.glob(data_dir + '/**/snippets/**/*.png')
 
 print('Loading model from file...\n')
 m = model.Model.load_model(model_input_fp)

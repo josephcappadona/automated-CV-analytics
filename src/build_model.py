@@ -1,7 +1,7 @@
 import sys
 import utils
 import time
-import glob
+import glob2git a
 import descriptor_extractors
 import model
 import os
@@ -37,9 +37,9 @@ print('\n\n')
 
 
 print('Creating new model...\n')
-im_fps = glob.glob(data_dir + '/*_snippets/*.png')
+im_fps = glob2.glob(data_dir + '/**/snippets/**/*.png')
 if not im_fps:
-    print('ERROR:  DATA_DIR \'%s\' contains no snippets in form \'*_snippets/*.png\'.\n')
+    print('ERROR:  DATA_DIR \'%s\' contains no snippets in form \'snippets/*.png\'.\n')
     exit()
  
 print('Loading data...')
