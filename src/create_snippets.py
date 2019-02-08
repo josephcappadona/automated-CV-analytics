@@ -1,13 +1,13 @@
 import sys
 import pathlib
-import glob
+import glob2
 import xml.etree.ElementTree as ET
 from PIL import Image
 from snippets import create_snippet, create_negative_snippets
 
 
 def get_label_fps(dir_):
-    label_fps = glob.iglob(dir_ + '/**/*.xml')
+    label_fps = glob2.iglob(dir_ + '/**/*.xml')
     return label_fps
 
 def remove_extension(filename):
@@ -50,10 +50,10 @@ if __name__ == '__main__':
     args = sys.argv
 
     if len(args) != 3:
-        print('USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR VIDEO_NAME')
+        print('USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR\n\nExample:  python create_text_snippets.py output/my_video/frames')
         exit(1)
     data_dir = args[1]
-    video_name = args[2]
+    video_name = data_dir.split('/')[-2]
 
     label_img_fp_pairs = get_label_img_fp_pairs(data_dir)
     print('%d labeled images found.' % len(label_img_fp_pairs))
