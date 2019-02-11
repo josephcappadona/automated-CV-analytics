@@ -35,7 +35,7 @@ print('Loading data...\n')
 ims = utils.import_images(im_fps)
 im_labels = utils.get_labels_from_fps(im_fps)
     
-print('Testing...\n')
+print('Testing %s model...\n' % model_type.upper())
 y_hat = m.predict(model_type, ims)
 print('Accuracy: %g\n' % utils.get_score(im_labels, y_hat))
 for i, (y, y_) in enumerate(zip(im_labels, y_hat)):

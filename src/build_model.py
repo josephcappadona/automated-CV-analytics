@@ -47,14 +47,14 @@ print('Loading data...')
 ims = utils.import_images(im_fps)
 im_labels = utils.get_labels_from_fps(im_fps)
 
-print('Building model...\n')
+print('Building new model...\n')
 m = model.Model(descriptor_extractors.orb_create)
 
 if consider_descriptors:
     print('Building BOVW...')
     m.BOVW_create(ims, k=[8, 16, 32, 64, 128, 256], show=False)
 
-print('Training %s...' % model_type)
+print('Training %s model...' % model_type.upper())
 m.train(model_type,
         ims,
         im_labels,
