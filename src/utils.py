@@ -1,5 +1,4 @@
 import time
-import math
 from cv2 import imread
 import numpy as np
 from features import extract_features
@@ -20,8 +19,8 @@ class Stopwatch(object):
         self.duration += self.end - self.start_
     
     def format_str(self):
-        m = int(math.round(self.duration / 60)); m_str = ('%dm' % m) if m > 0 else ''
-        s = int(math.round(self.duration % 60)); s_str = '%ds' % s
+        m = int(round(self.duration / 60)); m_str = ('%dm' % m) if m > 0 else ''
+        s = int(round(self.duration % 60)); s_str = '%ds' % s
         return m_str + s_str
 
 def get_directory(filepath):
@@ -91,7 +90,7 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=No
             extract_features(im,
                              BOVW,
                              descriptor_extractor,
-                             n_bins_per_color=n_bins_per_color,
+                             n_bins_per_channel=n_bins_per_channel,
                              mask=mask,
                              consider_descriptors=consider_descriptors,
                              consider_colors=consider_colors)
