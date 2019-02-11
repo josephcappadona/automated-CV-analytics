@@ -110,7 +110,7 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_channel=4, masks=
     
     
 def train(classifier, X, y):
-    print('Fitting SVM model...')
+    print('Fitting model...')
     sw = Stopwatch(); sw.start()
     
     classifier.fit(X, y)
