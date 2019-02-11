@@ -2,7 +2,7 @@ import numpy as np
 import utils
 
 
-def extract_bovw_info(im, cluster_model, keypoints, descriptors, n_bins_per_color=4, mask=None):
+def extract_bovw_info(im, cluster_model, keypoints, descriptors, n_bins_per_channel=4, mask=None):
     
     h, w = im.shape[:2]
 
@@ -18,52 +18,55 @@ def extract_bovw_info(im, cluster_model, keypoints, descriptors, n_bins_per_colo
     return bovw_histogram, cluster_matrix
 
 
-def get_bin_for_color(pixel, n_color_channels, n_bins_per_color):
+def get_bin_for_color(pixel, n_color_channels, n_bins_per_channel):
     if n_color_channels == 1: pixel = [pixel]
 
     bin_ = 0
     for i, channel in enumerate(pixel):
-        reduced_channel = int(channel / (256 / n_bins_per_color))
-        bin_ += (n_bins_per_color ** i) * reduced_channel
-        # reduces the number of colors in each channel to `n_bins_per_colors`
-        # then maps each color to a unique integer (essentially a conversion from base `n_bins_per_color` to base 10)
+        reduced_channel = int(channel / (256 / n_bins_per_channel))
+        bin_ += (n_bins_per_channel ** i) * reduced_channel
+        # reduces the number of colors in each channel to `n_bins_per_channels`
+        # then maps each color to a unique integer (essentially a conversion from base `n_bins_per_channel` to base 10)
 
         # if n_b_p_c=4, then 0-63=>0, 64-127=>1, 128-191=>2, 192-255=>3
         # so (50, 150, 250) => (0, 2, 3)
         # then, bin = 0*(4**0) + 2*(4**1) + 3*(4**2)
     return bin_
 
-def extract_color_info(im, keypoints, n_bins_per_color=4, mask=None):
+def extract_color_info(im, keypoints, n_bins_per_channel=4, mask=None):
     
     h, w = im.shape[:2]
     n_color_channels = 1 if len(im.shape) == 2 else im.shape[2]
-    n_colors = n_bins_per_color ** n_color_channels
+    n_colors = n_bins_per_channel ** n_color_channels
 
     color_matrix = -np.ones((h, w, n_color_channels), dtype=np.int8)
     color_histogram = np.zeros((n_colors), dtype=np.uint8)
     
     for kp in keypoints:
         x, y = [int(round(coord)) for coord in kp.pt]
-        bin_ = get_bin_for_color(im[y, x], n_color_channels, n_bins_per_color)
+        bin_ = get_bin_for_color(im[y, x], n_color_channels, n_bins_per_channel)
         color_matrix[y, x] = bin_
         color_histogram[bin_] += 1
         
     return color_histogram, color_matrix
 
 
-def extract_features(im, cluster_model, descriptor_extractor, n_bins_per_color=4, mask=None, consider_descriptors=True, consider_colors=True):
+def extract_features(im, cluster_model, descriptor_extractor, n_bins_per_channel=4, mask=None, consider_descriptors=True, consider_colors=True):
 
+    # extract keypoints and descriptors
     keypoints, descriptors = descriptor_extractor.detectAndCompute(im, mask=mask)
     if not len(keypoints):
         keypoints, descriptors = utils.kp_and_des_for_blank_image(im, descriptor_extractor)
-
+    
+    # extract BOVW info
     if consider_descriptors:
         bovw_histogram, cluster_matrix = extract_bovw_info(im, cluster_model, keypoints, descriptors, mask=mask)
     else:
         bovw_histogram, cluster_matrix = None, None
 
+    # extract color info
     if consider_colors:
-        color_histogram, color_matrix = extract_color_info(im, keypoints, n_bins_per_color=n_bins_per_color, mask=mask)
+        color_histogram, color_matrix = extract_color_info(im, keypoints, n_bins_per_channel=n_bins_per_channel, mask=mask)
     else:
         color_histogram, color_matrix = None, None
 
