@@ -72,7 +72,7 @@ def kp_and_des_for_blank_image(im, descriptor_extractor):
     des = np.zeros((descriptor_extractor.descriptorSize()), dtype=np.uint8)
     return [kp], [des]
     
-def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_color=4, masks=None, consider_descriptors=True, consider_colors=True):
+def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_channel=4, masks=None, consider_descriptors=True, consider_colors=True):
 
     if not consider_descriptors and not consider_colors:
         raise ValueError("Histogram is empty (neither descriptors nor colors are being considered).")
