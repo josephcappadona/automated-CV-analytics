@@ -1,7 +1,7 @@
 import sys
 import utils
 import time
-import glob2git a
+import glob2
 import descriptor_extractors
 import model
 import os
@@ -10,7 +10,7 @@ import warnings; warnings.filterwarnings('ignore')
 
 args = utils.parse_args(sys.argv)
 
-usage = "\nUSAGE:  python test_model.py -d DATA_DIR [-o MODEL_OUTPUT_FP] [--consider_descriptors 0/1] [--consider_colors 0/1]\n\nDefault values if argument not specified:\n-o \"output/model %Y-%m-%d %H:%M:%S.pkl\"\n--consider_descriptors 1\n--consider_colors 1\n"
+usage = "\nUSAGE:  python test_model.py -d DATA_DIR -t DECISION_MODEL_TYPE [-o MODEL_OUTPUT_FP] [--consider_descriptors 0/1] [--consider_colors 0/1]\n\nDefault values if argument not specified:\n-o \"output/model %Y-%m-%d %H:%M:%S.pkl\"\n--consider_descriptors 1\n--consider_colors 1\n"
 if not args['d']: # if no DATA_DIR specified
     print('No DATA_DIR specified.\n')
     print(usage)
@@ -18,6 +18,7 @@ if not args['d']: # if no DATA_DIR specified
 
 
 data_dir = args['d']
+model_type = args['t']
 model_output_fp = args['o'] if args['o'] \
                       else ('output/model %s.pkl' %
                             time.strftime('%Y-%m-%d %H:%M:%S',
@@ -51,14 +52,15 @@ m = model.Model(descriptor_extractors.orb_create)
 
 if consider_descriptors:
     print('Building BOVW...')
-    m.BOVW_create(ims, k=[8, 16, 32, 64, 128], show=False)
+    m.BOVW_create(ims, k=[8, 16, 32, 64, 128, 256], show=False)
 
-print('Training SVM...')
-m.SVM_train(ims,
-            im_labels,
-            consider_descriptors=consider_descriptors,
-            consider_colors=consider_colors,
-            kernel_approx=kernel_approx)
+print('Training %s...' % model_type)
+m.train(model_type,
+        ims,
+        im_labels,
+        consider_descriptors=consider_descriptors,
+        consider_colors=consider_colors,
+        kernel_approx=kernel_approx)
 
 print('Saving model...')
 model_output_dir = utils.get_directory(model_output_fp)

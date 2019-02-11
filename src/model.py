@@ -4,6 +4,7 @@ import clustering
 import sklearn
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.kernel_approximation import RBFSampler, AdditiveChi2Sampler
 from sklearn.multiclass import OneVsRestClassifier
 from features import extract_features
@@ -37,7 +38,7 @@ class Model(object):
         return True
         
     
-    def SVM_train(self, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True, kernel_approx=None):
+    def train(self, model_type, train_ims, train_im_labels, consider_descriptors=True, consider_colors=True, kernel_approx=None):
 
         self.consider_descriptors = consider_descriptors
         self.consider_colors = consider_colors
@@ -48,9 +49,7 @@ class Model(object):
                                              consider_descriptors=consider_descriptors,
                                              consider_colors=consider_colors)
         
-        # TODO: find optimal C;   TODO: support different kernels
-        svm = OneVsRestClassifier(SVC(kernel='linear', C=100)) # C=100 b/c Chapelle et al
-
+        # Kernel Approximation (RBF, Chi^2)
         if kernel_approx:
             if kernel_approx == 'rbf':
                 gamma = 2
@@ -71,16 +70,26 @@ class Model(object):
             print('Transforming histograms with %s(%s)...' % (kernel_name, kernel_params))
             train_im_histograms = approx_kernel_map.fit_transform(train_im_histograms)
             self.approx_kernel_map = approx_kernel_map
-
-        train(svm, train_im_histograms, train_im_labels)
         
-        self.svm_histograms = train_im_histograms
-        self.svm_labels = train_im_labels
-        self.SVM = svm    
+        # Model Selection (SVM, KNN)
+        if model_type.lower() == 'svm':
+            svm = OneVsRestClassifier(SVC(kernel='linear', C=100)) # C=100 b/c Chapelle et al
+            train(svm, train_im_histograms, train_im_labels)
+
+            self.svm_histograms = train_im_histograms
+            self.svm_labels = train_im_labels
+            self.SVM = svm
+        elif model_type.lower() == 'knn':
+            knn = KNeighborsClassifier()
+            train(knn, train_im_histograms, train_im_labels)
+            
+            self.knn_histograms = train_im_histograms
+            self.knn_labels = train_im_labels
+            self.KNN = knn
         return True
         
         
-    def SVM_predict(self, test_ims, masks=None):
+    def predict(self, model_type, test_ims, masks=None):
         
         test_histograms = get_histograms(test_ims,
                                          self.BOVW,
@@ -90,7 +99,11 @@ class Model(object):
                                          consider_colors=self.consider_colors)
         if self.approx_kernel_map:
             test_histograms = self.approx_kernel_map.transform(test_histograms)
-        return self.SVM.predict(test_histograms)
+        
+        if model_type.lower() == 'svm':
+            return self.SVM.predict(test_histograms)
+        elif model_type.lower() == 'knn':
+            return self.KNN.predict(test_histograms)
             
 
     def localize_w_ESS(self, im, mask=None):
