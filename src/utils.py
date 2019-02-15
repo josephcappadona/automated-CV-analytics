@@ -26,6 +26,15 @@ class Stopwatch(object):
 def get_directory(filepath):
     return '/'.join(filepath.split('/')[:-1])
 
+def get_filename(filepath):
+    return filepath.split('/')[-1]
+
+def get_parent_folder(filepath):
+    return filepath.split('/')[-2]
+
+def remove_extension(filename):
+    return filename[:filename.rfind('.')]
+
 def import_images(im_fps): 
     print('Importing images...\nTotal images: %d' % len(im_fps))
 
