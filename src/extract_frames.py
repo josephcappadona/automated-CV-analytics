@@ -14,8 +14,15 @@ if len(args) < 2 or len(args) > 3:
     print(usage)
     exit()
 
+# build local variables from command line arguments
 video_filepath = args[1]
 ffmpeg_args = args[2]
+
+print('\n')
+print('VIDEO_FILEPATH=%s' % video_filepath)
+print('FFMPEG_ARGS=%s' % ffmpeg_args)
+print('\n\n')
+
 
 # parse video filename
 video_filename = utils.get_filename(video_filepath)
