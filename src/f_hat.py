@@ -1,30 +1,10 @@
 import numpy as np
 
 def f_hat(bounds, SAT):
-    """Computes f_hat(y), an upper bound for f(y), where y is an interval bound for a set of rectangles
-
-        In particular,
-                f(y) = \sum_{d_i \in D}{w_{c_i}} for D_i = the ith descriptor, corresponding to the ith keypoint, belonging to cluster_id c_i;
-        and,
-            as shown in Lampert et al (Eq 5), f_hat(Y) = f^+(y_\cup) + f^-(y_\cap) >= f(y) for all y \in Y, where f^+ contains only the positive summands w_{c_i} and f^- contains only the negatives summands w_{c_i}, and y_\cup corresponds to the union of all rectangles in y and y_\cap corresponds to the intersection of all rectangles in y
-            
-            
-    Args:
-        bounds (list): a set of rectangles, representing candidate bounding boxes, in the form T x B x L x R, where T, B, L, and R are interval bounds for the top, bottom, left, and right margins of the set of bounding boxes
-            structure is [[top_min, top_max], [bottom_min, bottom_max], [left_min, left_max], [right_min, right_max]] 
-        SAT (n x m array):
-
-    Returns:
-        f_hat_(int): an upper bound for the quality function, f, over the input bounds
-
-
-    Running time:
-        Since we can find f^+(y_\cup) and f^-(y_\cap) in O(1) at runtime if we precompute integral images of the f^+ and f^-, implemented as summed area tables, we can compute f_hat in O(1)
-    """
     
     union_box, intersection_box = get_union_and_intersection_bounding_boxes(bounds)
-    f_pos_ = f_sum(union_box, SAT[:,:,1])
-    f_neg_ = f_sum(intersection_box, SAT[:,:,0])
+    f_pos_ = f_sum(union_box, SAT[:,:,1]) # SAT[:,:,1] corresponds to positive feature weights
+    f_neg_ = f_sum(intersection_box, SAT[:,:,0]) # SAT[:,:,0] corresponds to negative feature weights
     
     f_hat_ = f_pos_ + f_neg_
     return f_hat_
@@ -43,6 +23,7 @@ def f_sum(box, SAT):
     D = SAT[BR_x, BR_y]
     
     area_sum = D - B - C + A
+    return area_sum
     
 
 def get_union_and_intersection_bounding_boxes(bounds):
@@ -68,6 +49,7 @@ def get_union_and_intersection_bounding_boxes(bounds):
 
 # integral image over image's bovw clusters, weighted by SVM support vectors and coefficients
 # used to quickly calculate the sums of histograms over areas
+# TODO: native support for RBF kernel (not via kernel approx) https://stats.stackexchange.com/questions/86207/how-to-construct-the-feature-weight-vector-or-decision-boundary-from-a-linear
 def build_summed_area_table(cluster_matrix, svm_model):
     
     h, w = cluster_matrix.shape[:2]
@@ -81,7 +63,6 @@ def build_summed_area_table(cluster_matrix, svm_model):
             
             c_i = cluster_matrix[y, x]
             w_i = dual_coef.dot(sv[:,c_i]) if c_i != -1 else 0
-            # rbf decision function: https://stats.stackexchange.com/questions/86207/how-to-construct-the-feature-weight-vector-or-decision-boundary-from-a-linear
             # w_i = 0  =>  no descriptor at cluster_matrix[y,x]
             
             if w_i > 0:
