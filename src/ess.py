@@ -1,6 +1,7 @@
+import math
 from queue import PriorityQueue
-from math import floor
 from f_hat import f_hat
+
 
 def ESS(im, f_hat, SAT):
     
@@ -21,7 +22,7 @@ def ESS(im, f_hat, SAT):
         for new_bound in new_bounds:
             PQ.push(f_hat(new_bound, SAT), new_bound)
         bounds = PQ.get()
-    # TODO: mask optimum region and try again
+    # TODO: mask optimum region and try again to find multiple instances
 
     # return bounding box
     T, B, L, R = bounds
@@ -67,10 +68,11 @@ def split_bounds(bounds):
         
 def split_interval(I):
     I_1_lo = I[0]
-    I_1_hi = int(floor((I[0] + I[1])/2))
+    I_1_hi = int(math.floor((I[0] + I[1])/2))
     I_2_lo = I_1_hi + 1
     I_2_hi = I[1]
 
     I_1 = [I_1_lo, I_1_hi]
     I_2 = [I_2_lo, I_2_hi]
     return I_1, I_2
+
