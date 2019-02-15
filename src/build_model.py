@@ -3,23 +3,28 @@ import utils
 import time
 import glob2
 import descriptor_extractors
-import model
 import os
-import warnings; warnings.filterwarnings('ignore')
+import warnings; warnings.filterwarnings('ignore') # TODO: filter only warnings I want to filter
+from model import Model
 
 
-args = utils.parse_args(sys.argv)
+usage = \
+'''USAGE:  python build_model.py --data_dir DATA_DIR [--model_type DECISION_MODEL_TYPE] [--output MODEL_OUTPUT_FP] [--consider_descriptors 0/1] [--consider_colors 0/1] [--approximation_kernel RBF/CHI2]
 
-usage = "\nUSAGE:  python test_model.py -d DATA_DIR -t DECISION_MODEL_TYPE [-o MODEL_OUTPUT_FP] [--consider_descriptors 0/1] [--consider_colors 0/1]\n\nDefault values if argument not specified:\n-o \"output/model %Y-%m-%d %H:%M:%S.pkl\"\n--consider_descriptors 1\n--consider_colors 1\n"
-if not args['d']: # if no DATA_DIR specified
-    print('No DATA_DIR specified.\n')
-    print(usage)
-    exit()
+Default values if argument not specified:
+--model_type SVM
+--output "output/model %Y-%m-%d %H:%M:%S.pkl"
+--consider_descriptors 1
+--consider_colors 1
+--approximation_kernel None
+'''
 
+args = utils.parse_args(sys.argv) # type(args) == defaultdict(str)
 
-data_dir = args['d']
-model_type = args['t']
-model_output_fp = args['o'] if args['o'] \
+# build local variables from command line arguments
+data_dir = args['data_dir']
+model_type = args['model_type'].upper()
+model_output_fp = args['output'] if args['output'] \
                       else ('output/model %s.pkl' %
                             time.strftime('%Y-%m-%d %H:%M:%S',
                                           time.localtime()))
@@ -27,7 +32,15 @@ consider_descriptors = bool(int(args['consider_descriptors'])) \
                            if args['consider_descriptors'] else True
 consider_colors = bool(int(args['consider_colors'])) \
                       if args['consider_colors'] else True
-kernel_approx = args['approximation_kernel'] if args['approximation_kernel'] else None
+kernel_approx = args['approximation_kernel'].upper() \
+                    if args['approximation_kernel'] else None
+
+# if no DATA_DIR specified
+if not data_dir:
+    print('No DATA_DIR specified.\n')
+    print(usage)
+    exit()
+
 
 print('\n')
 print('DATA_DIR=%s' % data_dir)
@@ -38,33 +51,33 @@ print('\n\n')
 
 
 print('Creating new model...\n')
-im_fps = glob2.glob(data_dir + '/**/snippets/**/*.png')
+
+print('Loading data...')
+im_fps = glob2.glob(os.path.join(data_dir, '**/snippets/**/*.png'))
 if not im_fps:
     print('ERROR:  DATA_DIR \'%s\' contains no snippets in form \'snippets/*.png\'.\n')
-    exit()
- 
-print('Loading data...')
+    exit() 
 ims = utils.import_images(im_fps)
 im_labels = utils.get_labels_from_fps(im_fps)
 
 print('Building new model...\n')
-m = model.Model(descriptor_extractors.orb_create)
+model = Model(descriptor_extractors.orb_create) # TODO: allow custom descriptor extractor
 
 if consider_descriptors:
     print('Building BOVW...')
-    m.BOVW_create(ims, k=[8, 16, 32, 64, 128, 256], show=False)
+    model.BOVW_create(ims, k=[64], show=False) # TODO: allow custom cluster sizes
 
-print('Training %s model...' % model_type.upper())
-m.train(model_type,
-        ims,
-        im_labels,
-        consider_descriptors=consider_descriptors,
-        consider_colors=consider_colors,
-        kernel_approx=kernel_approx)
+print('Training %s model...' % model_type)
+model.train(model_type,
+            ims,
+            im_labels,
+            consider_descriptors=consider_descriptors,
+            consider_colors=consider_colors,
+            kernel_approx=kernel_approx)
 
 print('Saving model...')
 model_output_dir = utils.get_directory(model_output_fp)
 os.makedirs(model_output_dir, exist_ok=True)
-m.save_model(model_output_fp)
+model.save(model_output_fp)
 print('Model saved to \'%s\'.\n' % model_output_fp)
 
