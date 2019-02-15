@@ -64,16 +64,24 @@ print('Building new model...\n')
 model = Model(descriptor_extractors.orb_create) # TODO: allow custom descriptor extractor
 
 if consider_descriptors:
-    print('Building BOVW...')
+    print('Building BOVW...\n')
     model.BOVW_create(ims, k=[64], show=False) # TODO: allow custom cluster sizes
 
-print('Training %s model...' % model_type)
+print('Training %s model...\n' % model_type)
 model.train(model_type,
             ims,
             im_labels,
             consider_descriptors=consider_descriptors,
             consider_colors=consider_colors,
             kernel_approx=kernel_approx)
+
+print('Computing validation error...\n')
+predictions = model.predict(ims)
+
+num_incorrect = sum(1 if l != p else 0 for (l, p) in zip(im_labels, predictions))
+num_total = len(im_labels)
+validation_error = num_incorrect / num_total
+print('Validation error: %g (%d/%d)\n\n' % (validation_error, num_incorrect, num_total))
 
 print('Saving model...')
 model_output_dir = utils.get_directory(model_output_fp)
