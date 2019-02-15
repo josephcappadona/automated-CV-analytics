@@ -5,36 +5,36 @@ from utils import Stopwatch
 from sklearn.cluster import MiniBatchKMeans
 
 
-def get_optimal_clustering(data_to_cluster, cluster_sizes=[1,2,4,8,16,32,64,128,256,512,1024], show=True):
-    if len(cluster_sizes) > 1:
-        print('Finding optimal k...')
-    else:
-        print('Finding clusters for k=%d...' % cluster_sizes[0])
+def get_clustering(data_to_cluster, k):
+    sw = Stopwatch(); sw.start()
+
+    print('k: %s' % k, end='', flush=True)
+    kmeans = MiniBatchKMeans(n_clusters=k)
+    kmeans.fit(data_to_cluster)
+    score = math.log(kmeans.inertia_)
+
+    sw.stop()
+    print(', log(inertia): %.5f, time: %s' % (score, sw.format_str()))
+    return kmeans
+
+
+def get_optimal_clustering(data_to_cluster, cluster_sizes=[2,4,8,16,32,64,128,256,512,1024], show=True):
+    print('Finding optimal k...')
         
     models = {}
     scores = []
     for k in cluster_sizes:
-        sw = Stopwatch(); sw.start()
+        models[k] = get_clustering(data_to_cluster, k)
+        scores.append(math.log(models[k].inertia_))
 
-        print('k: %s' % k, end='', flush=True)
-        kmeans = MiniBatchKMeans(n_clusters=k)
-        kmeans.fit(data_to_cluster)
-        score = math.log(kmeans.inertia_)
-
-        sw.stop()
-        print(', log(inertia): %.5f, time: %s' % (score, sw.format_str()))
-
-        models[k] = kmeans
-        scores.append(score)
+    # stack data for graphing
     cluster_score_data = np.stack((cluster_sizes, scores), axis=-1)
 
-    if len(cluster_sizes) > 1:
-        k = get_knee_point(cluster_score_data, show=show)
-        print('Optimal k: %d\n\n' % k)
-    else:
-        k = cluster_sizes[0]
-        print('Clusters found.\n\n')
-    return models[k]
+    # use elbow method to find optimal k
+    optimal_k = get_knee_point(cluster_score_data, show=show)
+    print('Optimal k: %d\n\n' % optimal_k)
+
+    return models[optimal_k]
 
 
 def get_knee_point(data, show=True):

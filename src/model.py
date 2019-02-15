@@ -29,12 +29,14 @@ class Model(object):
         
         descriptors = utils.get_descriptors(ims, self.descriptor_extractor)
         
-        if k:
-            bovw = clustering.get_optimal_clustering(descriptors,
-                                                     cluster_sizes=k,
-                                                     show=show)
-        else:
+        if k is None: # use default cluster sizes
             bovw = clustering.get_optimal_clustering(descriptors, show=show)
+
+        elif type(k) == list: # use specified cluster sizes
+            bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=k, show=show)
+
+        elif type(k) == int: # use specified k
+            bovw = clustering.get_clustering(descriptors, k)
 
         self.BOVW = bovw
         return True
