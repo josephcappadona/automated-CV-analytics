@@ -1,22 +1,11 @@
 import xml.etree.ElementTree as ET
 from PIL import Image
 import os
-# load template
-# get images to apply template to
-# for each image
-#     check that size is the same
-#     change template
-#     save template
+import utils
+
 
 def load_label_template(label_template_fp):
     return ET.parse(label_template_fp)
-
-
-def get_folder(filepath):
-    return filepath.split('/')[-2]
-
-def get_filename(filepath):
-    return filepath.split('/')[-1]
 
 def sizes_match(root, img_filepath):
 
@@ -29,16 +18,13 @@ def sizes_match(root, img_filepath):
 
     return (img_width == template_width) and (img_height == template_height)
 
-def remove_extension(filepath):
-    return '.'.join(filepath.split('.')[:-1])
-
 def adapt_label_template(tree, img_filepath):
 
     root = tree.getroot()
     
     # if template size does not match image size, ask user to confirm template application
     if not sizes_match(root, img_filepath):
-        print('Size of \'%s\' does not match given template. Adapt template anyway? (y/n)')
+        print('Size of image \'%s\' does not match given template. Adapt template anyway? (y/n)')
 
         ans = None
         while ans not in ['y', 'n']:
@@ -47,15 +33,19 @@ def adapt_label_template(tree, img_filepath):
         if ans == 'n':
             return
 
+    # edit image parent folder
     folder_elmt = root.find('.//folder')
-    folder_elmt.text = get_folder(img_filepath)
+    folder_elmt.text = utils.get_parent_folder(img_filepath)
 
+    # edit image filename
     filename_elmt = root.find('.//filename')
-    filename_elmt.text = get_filename(img_filepath)
+    filename_elmt.text = utils.get_filename(img_filepath)
 
+    # edit image absolute filepath
     path_elmt = root.find('.//path')
-    path_elmt.text = os.getcwd() + '/' + img_filepath
+    path_elmt.text = os.path.join(os.getcwd(), img_filepath)
 
-    new_label_fp = remove_extension(img_filepath) + '.xml'
+    # write new label .xml file
+    new_label_fp = utils.remove_extension(img_filepath) + '.xml'
     tree.write(new_label_fp)
 
