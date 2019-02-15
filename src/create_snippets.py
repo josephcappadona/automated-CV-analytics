@@ -71,6 +71,12 @@ data_dir = args[1]
 video_name = args[2]
 neg_to_pos_ratio = int(args[3]) if len(args) == 4 else 1
 
+print('\n')
+print('DATA_DIR=%s' % data_dir)
+print('VIDEO_NAME=%s' % video_name)
+print('NEG_TO_POS_RATIO=%d' % neg_to_pos_ratio)
+print('\n\n')
+
 
 print('Finding labeled images...')
 label_img_fp_pairs = get_label_img_fp_pairs(data_dir)
