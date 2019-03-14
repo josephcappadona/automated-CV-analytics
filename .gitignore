@@ -1,8 +1,13 @@
 data/
 output/
+pics/
 
 labelImg
 
 .*
 
 **/*.pkl
+
+*.txt
+*.png
+*.ipynb
