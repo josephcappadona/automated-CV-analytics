@@ -8,32 +8,48 @@ import warnings; warnings.filterwarnings('ignore') # TODO: filter only warnings 
 from model import Model
 
 
-usage = \
-'''USAGE:  python build_model.py --data_dir DATA_DIR [--model_type DECISION_MODEL_TYPE] [--output MODEL_OUTPUT_FP] [--consider_descriptors 0/1] [--consider_colors 0/1] [--approximation_kernel RBF/CHI2]
-
-Default values if argument not specified:
---model_type SVM
---output "output/model %Y-%m-%d %H:%M:%S.pkl"
---consider_descriptors 1
---consider_colors 1
---approximation_kernel None
-'''
+usage = 'USAGE:  python build_model.py --data_dir DATA_DIR [--config CONFIG.yaml]'
+if len(sys.argv) == 1:
+    print(usage)
+    exit()
 
 args = utils.parse_args(sys.argv) # type(args) == defaultdict(str)
 
 # build local variables from command line arguments
 data_dir = args['data_dir']
-model_type = args['model_type'].upper()
-model_output_fp = args['output'] if args['output'] \
-                      else ('output/model %s.pkl' %
-                            time.strftime('%Y-%m-%d %H:%M:%S',
-                                          time.localtime()))
-consider_descriptors = bool(int(args['consider_descriptors'])) \
-                           if args['consider_descriptors'] else True
-consider_colors = bool(int(args['consider_colors'])) \
-                      if args['consider_colors'] else True
-kernel_approx = args['approximation_kernel'].upper() \
-                    if args['approximation_kernel'] else None
+
+if 'config' in args:
+    import yaml
+    with open(args['config'], 'rt') as config_file:
+        model_args = yaml.load(config_file)
+        for arg_name, arg in model_args.items():
+            vars()[arg_name] = arg
+
+if 'model_type' not in vars():
+    model_type = 'SVM'
+    model_params = {'kernel': 'linear'}
+
+if 'model_output_fp' not in vars():
+    model_output_fp = 'output/model %s.pkl' % \
+                          time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+
+if 'consider_descriptors' not in vars():
+    consider_descriptors = 1
+
+if 'consider_colors' not in vars():
+    consider_colors = 1
+
+if 'data_transform' not in vars() or data_transform == 'None':
+    data_transform = None
+    data_transform_params = {}
+
+if 'feature_selection' not in vars() or feature_selection == 'None':
+    feature_selection = None
+    feature_selection_params = {}
+
+if 'approximation_kernel' not in vars() or approximation_kernel == 'None':
+    approximation_kernel = None
+    approximation_kernel_params = {}
 
 # if no DATA_DIR specified
 if not data_dir:
@@ -45,8 +61,15 @@ if not data_dir:
 print('\n')
 print('DATA_DIR=%s' % data_dir)
 print('MODEL_OUTPUT_FP=\'%s\'' % model_output_fp)
+print('model_type=%s' % model_type)
+print('model_params=%s' % model_params)
 print('consider_descriptors=%s' % consider_descriptors)
 print('consider_colors=%s' % consider_colors)
+print('data_transform=%s' % data_transform)
+print('data_transform_params=%s' % data_transform_params)
+print('feature_selection=%s' % feature_selection)
+print('feature_selection_params=%s' % feature_selection_params)
+print('approximation_kernel_params=%s' % approximation_kernel_params)
 print('\n\n')
 
 
@@ -67,13 +90,13 @@ if consider_descriptors:
     print('Building BOVW...\n')
     model.BOVW_create(ims, k=[64], show=False) # TODO: allow custom cluster sizes
 
-print('Training %s model...\n' % model_type)
-model.train(model_type,
-            ims,
-            im_labels,
-            consider_descriptors=consider_descriptors,
-            consider_colors=consider_colors,
-            kernel_approx=kernel_approx)
+print('Training model...\n')
+model.train(model_type, model_params,
+            ims, im_labels,
+            consider_descriptors, consider_colors,
+            data_transform, data_transform_params,
+            feature_selection, feature_selection_params,
+            approximation_kernel, approximation_kernel_params)
 
 print('Computing validation error...\n')
 predictions = model.predict(ims)

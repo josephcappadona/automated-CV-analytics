@@ -1,0 +1,5 @@
+model_type: SVM                             # SVM/KNN
+model_output_fp: output/my_model.pkl        # 
+consider_descriptors: 1                     # 0/1
+consider_colors: 1                          # 0/1
+approximation_kernel: None                  # None/RBF/CHI2

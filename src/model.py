@@ -5,6 +5,7 @@ import sklearn
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.feature_selection import VarianceThreshold
 from sklearn.kernel_approximation import RBFSampler, AdditiveChi2Sampler
 from sklearn.multiclass import OneVsRestClassifier
 from features import extract_features
@@ -19,8 +20,12 @@ class Model(object):
     def __init__(self, descriptor_extractor_create):
         self.descriptor_extractor_create = descriptor_extractor_create
         self.descriptor_extractor = descriptor_extractor_create()
+        
         self.BOVW = None
         self.SVM = None
+
+        self.transformer = None
+        self.selector = None
         self.approx_kernel_map = None
         
         
@@ -42,8 +47,13 @@ class Model(object):
         return True
         
     
-    def train(self, model_type, train_ims, train_im_labels,
-              consider_descriptors=True, consider_colors=True, kernel_approx=None):
+    def train(self,
+              model_type, model_params,
+              train_ims, train_im_labels,
+              consider_descriptors, consider_colors,
+              data_transform, data_transform_params,
+              feature_selection, feature_selection_params,
+              kernel_approx, kernel_approx_params):
 
         self.consider_descriptors = consider_descriptors
         self.consider_colors = consider_colors
@@ -54,52 +64,42 @@ class Model(object):
                                  self.descriptor_extractor,
                                  consider_descriptors=consider_descriptors,
                                  consider_colors=consider_colors)
-        
-        # Kernel Approximation (RBF, Chi^2)
-        # TODO: support custom kernel parameters (gamma, sample_steps, etc)
-        if kernel_approx:
-            if kernel_approx == 'RBF':
-                gamma = 2
-                n_components = len(train_im_histograms[0])*20
-                approx_kernel_map = RBFSampler(gamma=gamma, n_components=n_components)
-                
-                kernel_name = 'RBFSampler'
-                kernel_params = 'gamma=%g, n_components=%d' % (gamma, n_components)
-                
-            elif kernel_approx == 'CHI2':
-                sample_steps = 1
-                sample_interval = None
-                approx_kernel_map = AdditiveChi2Sampler(sample_steps=sample_steps,
-                                                        sample_interval=sample_interval)
-                
-                kernel_name = 'AdditiveChi2Sampler'
-                kernel_params = 'sample_steps=%d, sample_interval=%s' \
-                                    % (sample_steps, sample_interval)
-            self.approx_kernel_map = approx_kernel_map
-                
-            print('Transforming histograms with %s(%s)...\n' % (kernel_name, kernel_params))
-            train_im_histograms = approx_kernel_map.fit_transform(train_im_histograms)
-        
-        # Model Selection (SVM, KNN)
-        self.model_type = model_type
-        if self.model_type == 'SVM':
-            svm = OneVsRestClassifier(SVC(kernel='linear', C=100)) # C=100 b/c Chapelle et al
-            utils.train(svm, train_im_histograms, train_im_labels)
 
-            self.svm_histograms = train_im_histograms
-            self.svm_labels = train_im_labels
-            self.SVM = svm
-        elif model_type.lower() == 'KNN':
-            knn = KNeighborsClassifier()
-            utils.train(knn, train_im_histograms, train_im_labels)
-            
-            self.knn_histograms = train_im_histograms
-            self.knn_labels = train_im_labels
-            self.KNN = knn
-        else:
-            raise ValueError('Unsupported decision model type \'%s\'.' % self.model_type)
+        self.generate_data_transformers(data_transform, data_transform_params,
+                                        feature_selection, feature_selection_params,
+                                        kernel_approx, kernel_approx_params)
+        train_im_histograms = self.fit_data_transformers(train_im_histograms)
+        self.train_model(model_type, model_params,
+                         train_im_histograms, train_im_labels)
+        
         return True
         
+    # Model Selection (SVM, KNN)
+    def train_model(self, model_type, model_params, train_im_histograms, train_im_labels):
+        print('Training %s model with parameters %s...\n' % (model_type, utils.get_params_string(model_params)))
+        self.model_type = model_type
+        if self.model_type == 'SVM':
+            self.train_SVM(model_params, train_im_histograms, train_im_labels)
+        elif model_type == 'KNN':
+            self.train_KNN(model_params, train_im_histograms, train_im_labels)
+        else:
+            raise ValueError('Unsupported decision model type \'%s\'.' % self.model_type)
+
+    def train_SVM(self, model_params, train_im_histograms, train_im_labels):
+        svm = OneVsRestClassifier(SVC(**model_params)) # C=100 b/c Chapelle et al
+        utils.train(svm, train_im_histograms, train_im_labels)
+
+        self.svm_histograms = train_im_histograms
+        self.svm_labels = train_im_labels
+        self.SVM = svm       
+
+    def train_KNN(self, model_params, train_im_histograms, train_im_labels):
+        knn = KNeighborsClassifier(**model_params)
+        utils.train(knn, train_im_histograms, train_im_labels)
+        
+        self.knn_histograms = train_im_histograms
+        self.knn_labels = train_im_labels
+        self.KNN = knn
         
     def predict(self, test_ims, masks=None):
         
@@ -111,14 +111,81 @@ class Model(object):
                                  consider_descriptors=self.consider_descriptors,
                                  consider_colors=self.consider_colors)
 
-        if self.approx_kernel_map:
-            test_histograms = self.approx_kernel_map.transform(test_histograms)
-        
+        test_histograms = self.transform_histograms(test_histograms)
+
         if self.model_type == 'SVM':
             return self.SVM.predict(test_histograms)
         elif self.model_type == 'KNN':
             return self.KNN.predict(test_histograms)
             
+
+    # TODO: support custom parameters (gamma, sample_steps, etc)
+    def generate_data_transformers(self, data_transform, data_transform_params, feature_selection, feature_selection_params, kernel_approx, kernel_approx_params):
+        # Data Transformation (Scaling, Normalization)
+        if data_transform:
+            if data_transform == 'EXP':
+                transformer = ''
+                transformer.name = ''
+
+            elif data_transform == 'NORM':
+                pass
+
+            transformer.params = utils.get_params_string(data_transform_params)
+            self.transformer = transformer
+
+        # Feature Selection (Var, Chi^2)
+        if feature_selection:
+            if feature_selection == 'VAR':
+                selector = VarianceThreshold(**feature_selection_params)
+                selector.name = 'VarianceThreshold'
+
+            elif feature_selection == 'CHI2':
+                pass
+
+            selector.params = utils.get_params_string(feature_selection_params)
+            self.selector = selector
+
+        # Kernel Approximation (RBF, Chi^2)
+        if kernel_approx:
+            if kernel_approx == 'RBF':
+                approx_kernel_map = RBFSampler(**approx_kernel_params) 
+                approx_kernel_map.name = 'RBFSampler'
+
+            elif kernel_approx == 'CHI2':
+                approx_kernel_map = AdditiveChi2Sampler(**approx_kernel_params) 
+                approx_kernel_map.name = 'AdditiveChi2Sampler'
+
+            approx_kernel_map.params = utils.get_params_string(approx_kernel_params)
+            self.approx_kernel_map = approx_kernel_map
+      
+    def fit_data_transformers(self, train_im_histograms):
+        if self.transformer:
+            train_im_histograms = self.transformer.transform(train_im_histograms)
+        if self.selector:
+            before = len(train_im_histograms[0])
+            train_im_histograms = self.selector.fit_transform(train_im_histograms)
+            after = len(train_im_histograms[0])
+            print('Fit feature selector, reduced # of features from %d to %d' % (before, after))
+        if self.approx_kernel_map:
+            train_im_histograms = self.approx_kernel_map.fit_transform(train_im_histograms)
+        return train_im_histograms
+
+    def transform_histograms(self, im_histograms):
+        if self.transformer:
+            print('Transforming histograms with %s(%s)...\n' % (self.transformer.name, self.transformer.params)) 
+            im_histograms = self.transformer.transform(im_histograms)
+
+        if self.selector:
+            print('Selecting features with %s(%s)...\n' % (self.selector.name, self.selector.params)) 
+            im_histograms = self.selector.transform(im_histograms)
+
+        if self.approx_kernel_map:
+            print('Transforming histograms with %s(%s)...\n' % (self.approx_kernel_map.name, self.approx_kernel_map.params))
+            im_histograms = self.approx_kernel_map.transform(im_histograms)
+
+        return im_histograms
+ 
+   
 
     def localize_w_ESS(self, im, mask=None):
         

@@ -116,7 +116,9 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_channel=4, masks=
     sw.stop()
     print('Done making histograms. Took %s.\n\n' % sw.format_str())
     return vstacked
-    
+
+def get_params_string(params):
+    return ', '.join('%s=%s' % (k, v) for k,v in params.items())
     
 def train(classifier, X, y):
     print('Fitting model...')
