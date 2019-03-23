@@ -1,4 +1,4 @@
-import sys
+from sys import argv as args
 import utils
 import glob2
 import os
@@ -7,19 +7,20 @@ from model import Model
 
 usage = \
 '''
-USAGE:  python test_model.py --model MODEL_INPUT_FP --data_dir DATA_DIR
+USAGE:  python test_model.py MODEL_INPUT_FP DATA_DIR
 '''
+if len(args) == 1:
+    print(usage)
+    exit()
 
-args = utils.parse_args(sys.argv) # type(args) == defaultdict(str)
+try:
+    # build local variables from command line arguments
+    model_input_fp = args[1]
+    data_dir = args[2]
 
-# build local variables from command line arguments
-model_input_fp = args['model']
-data_dir = args['data_dir']
-
-# if not MODEL_INPUT_FP or DATA_DIR specified
-if not model_input_fp or not data_dir:
-    missing_arg = 'MODEL_INPUT_FP' if not model_input_fp else 'DATA_DIR'
-    print('No %s specified.\n' % missing_arg)
+except IndexError:
+    # if not MODEL_INPUT_FP or DATA_DIR specified
+    print('\nERROR:  Command line arguments incomplete.')
     print(usage)
     exit()
 
