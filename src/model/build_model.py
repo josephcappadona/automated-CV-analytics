@@ -18,6 +18,7 @@ args = utils.parse_args(sys.argv) # type(args) == defaultdict(str)
 # build local variables from command line arguments
 data_dir = args['data_dir']
 
+# import variables from config
 if 'config' in args:
     import yaml
     with open(args['config'], 'rt') as config_file:
@@ -30,8 +31,11 @@ if 'model_type' not in vars():
     model_params = {'kernel': 'linear'}
 
 if 'model_output_fp' not in vars():
-    model_output_fp = 'output/model %s.pkl' % \
-                          time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    model_output_fp = 'output/model {time}.pkl'
+if '{time}' in model_output_fp:
+    time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+    model_output_fp = model_output_fp.format(time=time_str)
+        
 
 if 'consider_descriptors' not in vars():
     consider_descriptors = 1

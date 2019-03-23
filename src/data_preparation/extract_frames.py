@@ -6,7 +6,7 @@ import utils
 usage = \
 '''USAGE:  python extract_frames.py VIDEO_FILEPATH [FFMPEG_ARGS]
 
-Example:  python extract_frames.py my_video.mp4 "-vf fps=5"
+Example:  python extract_frames.py data/my_video.mp4 "-vf fps=5"
 '''
 
 args = sys.argv
