@@ -6,6 +6,4 @@ This repository is very much a work in progress, but feel free to look around.
 
 ## TODOs
 
-* break scripts into subfolders based on which part of the pipeline they belong to (data set creation, BOVW creation, model training/testing)
-
-* develop Readmes for each part of the pipeline with examples
+* finish implementing model options
