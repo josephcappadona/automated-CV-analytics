@@ -1,1 +1,1 @@
-These are papers and articles that I have frequently referred to in the designing of this model and pipeline.
+These are papers and articles that I have frequently referred to in the design and implementation of this model and pipeline.
