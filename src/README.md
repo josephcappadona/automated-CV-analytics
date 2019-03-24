@@ -27,7 +27,7 @@ Model architecture is as follows:
 
 ### Step 3: Entity Localization
 
-(Implemented but not thoroughly tested.) Uses [Efficient Subwindow Search](https://ieeexplore.ieee.org/document/5166448) to locate entities within specified images.
+Uses [Efficient Subwindow Search](https://ieeexplore.ieee.org/document/5166448) to locate entities within specified images.
 
 `ess.py` implements the ESS algorithm.
 
