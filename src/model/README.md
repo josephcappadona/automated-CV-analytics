@@ -11,6 +11,7 @@ python src/model/test_model.py output/my_video_model.pkl output/my_video_test
 
 ### TODOs
 
+* Move `extract_features` method to `Model` class
 * Implement additional model types (Logistic Regression, )
 * Implement other feature selection options (Chi^2, )
 * Implement data transformation options (Exponential, Normalization, )
