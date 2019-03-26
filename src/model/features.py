@@ -69,13 +69,13 @@ def extract_features(im, cluster_model, descriptor_extractor, n_bins_per_channel
     if consider_descriptors:
         bovw_histogram, cluster_matrix = extract_bovw_info(im, cluster_model, keypoints, descriptors, mask=mask)
     else:
-        bovw_histogram, cluster_matrix = None, None
+        bovw_histogram, cluster_matrix = [], []
 
     # extract color info
     if consider_colors:
         color_histogram, color_matrix = extract_color_info(im, keypoints, n_bins_per_channel=n_bins_per_channel, mask=mask)
     else:
-        color_histogram, color_matrix = None, None
+        color_histogram, color_matrix = [], []
 
     return ((bovw_histogram, cluster_matrix), (color_histogram, color_matrix))
 
