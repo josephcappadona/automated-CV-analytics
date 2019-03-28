@@ -20,7 +20,7 @@ class Model(object):
         self.descriptor_extractor = descriptor_extractor_create()
         
         self.BOVW = None
-        self.SVM = None
+        self.model = None
 
         self.transformer = None
         self.selector = None
@@ -87,17 +87,17 @@ class Model(object):
         svm = OneVsRestClassifier(SVC(**model_params)) # C=100 b/c Chapelle et al
         utils.train(svm, train_im_histograms, train_im_labels)
 
-        self.svm_histograms = train_im_histograms
-        self.svm_labels = train_im_labels
-        self.SVM = svm       
+        self._histograms = train_im_histograms
+        self._labels = train_im_labels
+        self.model = svm
 
     def train_KNN(self, model_params, train_im_histograms, train_im_labels):
         knn = KNeighborsClassifier(**model_params)
         utils.train(knn, train_im_histograms, train_im_labels)
         
-        self.knn_histograms = train_im_histograms
-        self.knn_labels = train_im_labels
-        self.KNN = knn
+        self._histograms = train_im_histograms
+        self._labels = train_im_labels
+        self.model = knn
         
     def predict(self, test_ims, masks=None):
         
@@ -111,11 +111,8 @@ class Model(object):
 
         test_histograms = self.transform_histograms(test_histograms)
 
-        if self.model_type == 'SVM':
-            return self.SVM.predict(test_histograms)
-        elif self.model_type == 'KNN':
-            return self.KNN.predict(test_histograms)
-            
+        self.model.predict(test_histograms)
+
 
     # TODO: support custom parameters (gamma, sample_steps, etc)
     def generate_data_transformers(self, data_transform, data_transform_params, feature_selection, feature_selection_params, kernel_approx, kernel_approx_params):
