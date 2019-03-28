@@ -81,7 +81,7 @@ class Model(object):
         if model_type == 'SVM':
             model = OneVsRestClassifier(SVC(**model_params))
         elif model_type == 'KNN':
-            KNeighborsClassifier(**model_params)
+            model = KNeighborsClassifier(**model_params)
         elif model_type == 'LOGREG':
             model = LogisticRegression(**model_params)
         else:
@@ -106,7 +106,7 @@ class Model(object):
 
         test_histograms = self.transform_histograms(test_histograms)
 
-        self.model.predict(test_histograms)
+        return self.model.predict(test_histograms)
 
 
     # TODO: support custom parameters (gamma, sample_steps, etc)
