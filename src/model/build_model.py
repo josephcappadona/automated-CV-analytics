@@ -45,6 +45,9 @@ if 'consider_descriptors' not in vars():
 if 'consider_colors' not in vars():
     consider_colors = 1
 
+if 'BOVW_clusters' not in vars():
+    BOVW_clusters = [8, 16, 32, 64, 128, 256]
+
 if 'data_transform' not in vars() or data_transform == 'None':
     data_transform = None
     data_transform_params = {}
@@ -71,6 +74,7 @@ print('model_type=%s' % model_type)
 print('model_params=%s' % model_params)
 print('consider_descriptors=%s' % consider_descriptors)
 print('consider_colors=%s' % consider_colors)
+print('BOVW_clusters=%s' % BOVW_clusters)
 print('data_transform=%s' % data_transform)
 print('data_transform_params=%s' % data_transform_params)
 print('feature_selection=%s' % feature_selection)
@@ -94,7 +98,7 @@ model = Model(descriptor_extractors.orb_create) # TODO: allow custom descriptor 
 
 if consider_descriptors:
     print('Building BOVW...\n')
-    model.BOVW_create(ims, k=[64], show=False) # TODO: allow custom cluster sizes
+    model.BOVW_create(ims, k=BOVW_clusters, show=False) # TODO: allow custom cluster sizes
 
 print('Training model...\n')
 model.train(model_type, model_params,
