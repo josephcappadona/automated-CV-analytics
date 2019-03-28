@@ -87,7 +87,7 @@ class Model(object):
         else:
             raise ValueError('Unsupported decision model type \'%s\'.' % self.model_type)
 
-        utils.train(model, train_im_histogams, train_im_labels)
+        utils.train(model, train_im_histograms, train_im_labels)
 
         self.histograms = train_im_histograms
         self.labels = train_im_labels
