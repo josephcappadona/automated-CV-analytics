@@ -4,10 +4,11 @@ import clustering
 import sklearn
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.kernel_approximation import RBFSampler, AdditiveChi2Sampler
-from sklearn.multiclass import OneVsRestClassifier
 from features import extract_features
 import utils
 from utils import Stopwatch
@@ -75,30 +76,24 @@ class Model(object):
     # Model Selection (SVM, KNN)
     def train_model(self, model_type, model_params, train_im_histograms, train_im_labels):
         print('Training %s model with parameters %s...\n' % (model_type, utils.get_params_string(model_params)))
+
         self.model_type = model_type
-        if self.model_type == 'SVM':
-            self.train_SVM(model_params, train_im_histograms, train_im_labels)
+        if model_type == 'SVM':
+            model = OneVsRestClassifier(SVC(**model_params))
         elif model_type == 'KNN':
-            self.train_KNN(model_params, train_im_histograms, train_im_labels)
+            KNeighborsClassifier(**model_params)
+        elif model_type == 'LOGREG':
+            model = LogisticRegression(**model_params)
         else:
             raise ValueError('Unsupported decision model type \'%s\'.' % self.model_type)
 
-    def train_SVM(self, model_params, train_im_histograms, train_im_labels):
-        svm = OneVsRestClassifier(SVC(**model_params)) # C=100 b/c Chapelle et al
-        utils.train(svm, train_im_histograms, train_im_labels)
+        utils.train(model, train_im_histogams, train_im_labels)
 
-        self._histograms = train_im_histograms
-        self._labels = train_im_labels
-        self.model = svm
+        self.histograms = train_im_histograms
+        self.labels = train_im_labels
+        self.model = model
 
-    def train_KNN(self, model_params, train_im_histograms, train_im_labels):
-        knn = KNeighborsClassifier(**model_params)
-        utils.train(knn, train_im_histograms, train_im_labels)
-        
-        self._histograms = train_im_histograms
-        self._labels = train_im_labels
-        self.model = knn
-        
+
     def predict(self, test_ims, masks=None):
         
         test_histograms = \
