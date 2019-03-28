@@ -29,6 +29,8 @@ if 'config' in args:
 if 'model_type' not in vars():
     model_type = 'SVM'
     model_params = {'kernel': 'linear'}
+if 'model_params' not in vars():
+    model_params = {}
 
 if 'model_output_fp' not in vars():
     model_output_fp = 'output/model {time}.pkl'
