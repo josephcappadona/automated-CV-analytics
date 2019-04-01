@@ -3,23 +3,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils import Stopwatch
 from sklearn.cluster import MiniBatchKMeans
-
+import logging
 
 def get_clustering(data_to_cluster, k):
     sw = Stopwatch(); sw.start()
 
-    print('k: %s' % k, end='', flush=True)
     kmeans = MiniBatchKMeans(n_clusters=k)
     kmeans.fit(data_to_cluster)
     score = math.log(kmeans.inertia_)
 
     sw.stop()
-    print(', log(inertia): %.5f, time: %s' % (score, sw.format_str()))
+    logging.debug('k: %s, log(inertia): %.5f, time: %s' % (k, score, sw.format_str()))
     return kmeans
 
 
 def get_optimal_clustering(data_to_cluster, cluster_sizes=[2,4,8,16,32,64,128,256,512,1024], show=True):
-    print('Finding optimal k...')
+    logging.debug('Finding optimal k...')
         
     models = {}
     scores = []
@@ -32,7 +31,7 @@ def get_optimal_clustering(data_to_cluster, cluster_sizes=[2,4,8,16,32,64,128,25
 
     # use elbow method to find optimal k
     optimal_k = get_knee_point(cluster_score_data, show=show)
-    print('Optimal k: %d\n\n' % optimal_k)
+    logging.debug('Optimal k: %d' % optimal_k)
 
     return models[optimal_k]
 
