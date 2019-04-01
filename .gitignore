@@ -1,6 +1,7 @@
 data/
 output/
 notebooks/
+configs/
 
 labelImg
 
