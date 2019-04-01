@@ -43,17 +43,13 @@ ims = utils.import_images(im_fps)
 im_labels = utils.get_labels_from_fps(im_fps)
 
 logging.info('Building new model...')
-model = Model()
+model = Model(**model_args)
 
-if model_args['consider_descriptors']:
-    logging.info('Building BOVW...')
-    model.BOVW_create(ims,
-                      model_args['descriptor_extractor_type'],
-                      model_args['descriptor_extractor_params'],
-                      model_args['BOVW_size'])
+logging.info('Building BOVW...')
+model.BOVW_create(ims)
 
 logging.info('Training model...')
-model.train(ims, im_labels, **model_args)
+model.train(ims, im_labels)
  
 logging.info('Computing validation error...')
 predictions = model.predict(ims)
