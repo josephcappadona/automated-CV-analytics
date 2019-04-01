@@ -52,12 +52,13 @@ def get_bboxes(label_fp):
 
 usage = \
 '''
-USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR VIDEO_NAME [NEG_TO_POS_RATIO]
+USAGE:  python create_text_snippets.py FRAMES_AND_LABELS_DIR MEDIA_NAME [NEG_TO_POS_RATIO]
 
 If arg is not specified:
 NEG_TO_POS_RATIO=1
 
-Example:  python create_text_snippets.py output/my_video/frames my_video 2
+Video example:  python create_snippets.py output/my_video/frames my_video 2
+Image example:  python create_snippets.py data/my_image my_image 2
 '''
 
 args = sys.argv
