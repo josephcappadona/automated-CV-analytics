@@ -1,3 +1,4 @@
+import logging
 import pickle
 import numpy as np
 import clustering
@@ -16,43 +17,44 @@ from utils import Stopwatch
 
 class Model(object):
     
-    def __init__(self, descriptor_extractor_create):
-        self.descriptor_extractor_create = descriptor_extractor_create
-        self.descriptor_extractor = descriptor_extractor_create()
+    def __init__(self):
         
-        self.BOVW = None
         self.model = None
+        self.BOVW = None
+
+        self.descriptor_extractor = None
 
         self.transformer = None
         self.selector = None
         self.approx_kernel_map = None
-        
-        
-    def BOVW_create(self, ims, k=None, show=False):
-        print('Total images to process (in training set): %d' % len(ims))
-        
+
+
+    def BOVW_create(self, ims, de_type, de_params, bovw_size, show=False):
+        logging.debug('Total images to process for BOVW: %d' % len(ims))
+       
+        self.de_type, self.de_params = de_type, de_params
+        self.descriptor_extractor = utils.create_descriptor_extractor(de_type, de_params)
         descriptors = utils.get_descriptors(ims, self.descriptor_extractor)
         
-        if k is None: # use default cluster sizes
+        if type(bovw_size) == int:
+            bovw = clustering.get_clustering(descriptors, bovw_size) 
+        elif type(bovw_size) == list:
+            bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=bovw_size, show=show)
+        else: # use default
             bovw = clustering.get_optimal_clustering(descriptors, show=show)
 
-        elif type(k) == list: # use specified cluster sizes
-            bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=k, show=show)
-
-        elif type(k) == int: # use specified k
-            bovw = clustering.get_clustering(descriptors, k)
-
         self.BOVW = bovw
-        return True
+        logging.debug('BOVW (k=%d) created.' % bovw.n_clusters)
         
     
     def train(self,
-              model_type, model_params,
               train_ims, train_im_labels,
-              consider_descriptors, consider_colors,
-              data_transform, data_transform_params,
-              feature_selection, feature_selection_params,
-              kernel_approx, kernel_approx_params):
+              model_type='LogReg', model_params={},
+              consider_descriptors=True, consider_colors=True,
+              data_transform=None, data_transform_params={},
+              feature_selection=None, feature_selection_params={},
+              approximation_kernel=None, kernel_approx_params={},
+              **extra_args):
 
         self.consider_descriptors = consider_descriptors
         self.consider_colors = consider_colors
@@ -66,7 +68,7 @@ class Model(object):
 
         self.generate_data_transformers(data_transform, data_transform_params,
                                         feature_selection, feature_selection_params,
-                                        kernel_approx, kernel_approx_params)
+                                        approximation_kernel, kernel_approx_params)
         train_im_histograms = self.fit_data_transformers(train_im_histograms)
         self.train_model(model_type, model_params,
                          train_im_histograms, train_im_labels)
@@ -75,7 +77,7 @@ class Model(object):
         
     # Model Selection (SVM, KNN)
     def train_model(self, model_type, model_params, train_im_histograms, train_im_labels):
-        print('Training %s model with parameters %s...\n' % (model_type, utils.get_params_string(model_params)))
+        logging.debug('Training %s model with parameters %s...' % (model_type, utils.get_params_string(model_params)))
 
         self.model_type = model_type
         if model_type == 'SVM':
@@ -109,8 +111,7 @@ class Model(object):
         return self.model.predict(test_histograms)
 
 
-    # TODO: support custom parameters (gamma, sample_steps, etc)
-    def generate_data_transformers(self, data_transform, data_transform_params, feature_selection, feature_selection_params, kernel_approx, kernel_approx_params):
+    def generate_data_transformers(self, data_transform, data_transform_params, feature_selection, feature_selection_params, approximation_kernel, kernel_approx_params):
         # Data Transformation (Scaling, Normalization)
         if data_transform:
             if data_transform == 'EXP':
@@ -136,12 +137,12 @@ class Model(object):
             self.selector = selector
 
         # Kernel Approximation (RBF, Chi^2)
-        if kernel_approx:
-            if kernel_approx == 'RBF':
+        if approximation_kernel:
+            if approximation_kernel == 'RBF':
                 approx_kernel_map = RBFSampler(**approx_kernel_params) 
                 approx_kernel_map.name = 'RBFSampler'
 
-            elif kernel_approx == 'CHI2':
+            elif approximation_kernel == 'CHI2':
                 approx_kernel_map = AdditiveChi2Sampler(**approx_kernel_params) 
                 approx_kernel_map.name = 'AdditiveChi2Sampler'
 
@@ -155,29 +156,28 @@ class Model(object):
             before = len(train_im_histograms[0])
             train_im_histograms = self.selector.fit_transform(train_im_histograms)
             after = len(train_im_histograms[0])
-            print('Fit feature selector, reduced # of features from %d to %d' % (before, after))
+            logging.debug('Fit feature selector, reduced # of features from %d to %d' % (before, after))
         if self.approx_kernel_map:
             train_im_histograms = self.approx_kernel_map.fit_transform(train_im_histograms)
         return train_im_histograms
 
     def transform_histograms(self, im_histograms):
         if self.transformer:
-            print('Transforming histograms with %s(%s)...\n' % (self.transformer.name, self.transformer.params)) 
+            logging.debug('Transforming histograms with %s(%s)...' % (self.transformer.name, self.transformer.params)) 
             im_histograms = self.transformer.transform(im_histograms)
 
         if self.selector:
-            print('Selecting features with %s(%s)...\n' % (self.selector.name, self.selector.params)) 
+            logging.debug('Selecting features with %s(%s)...' % (self.selector.name, self.selector.params)) 
             im_histograms = self.selector.transform(im_histograms)
 
         if self.approx_kernel_map:
-            print('Transforming histograms with %s(%s)...\n' % (self.approx_kernel_map.name, self.approx_kernel_map.params))
+            logging.debug('Transforming histograms with %s(%s)...' % (self.approx_kernel_map.name, self.approx_kernel_map.params))
             im_histograms = self.approx_kernel_map.transform(im_histograms)
 
         return im_histograms
  
           
     def save(self, fp):
-
         d_e = self.descriptor_extractor
         self.descriptor_extractor = None # to prevent pickle error
         
@@ -187,6 +187,6 @@ class Model(object):
     @staticmethod
     def load(model_fp):
         model = pickle.load(open(model_fp, 'rb'))
-        model.descriptor_extractor = model.descriptor_extractor_create()
+        model.descriptor_extractor = utils.create_descriptor_extractor(model.de_type, model.de_params)
         return model
 

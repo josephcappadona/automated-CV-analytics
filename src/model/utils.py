@@ -1,7 +1,11 @@
 import time
-from cv2 import imread
+import cv2
 import numpy as np
 from features import extract_features
+import os
+import logging
+
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
 
 
 class Stopwatch(object):
@@ -35,31 +39,37 @@ def get_parent_folder(filepath):
 def remove_extension(filename):
     return filename[:filename.rfind('.')]
 
-def import_images(im_fps): 
-    print('Importing images...\nTotal images: %d' % len(im_fps))
+def import_images(im_fps):
+    logging.debug('Importing images...\nTotal images: %d' % len(im_fps))
 
     sw = Stopwatch(); sw.start()
     ims = []
     n = int(len(im_fps) / 10)
     for i, im_fp in enumerate(im_fps):
         if i % n == 0:
-            print(i)
-        ims.append(imread(im_fp))
+            logging.debug(i)
+        ims.append(cv2.imread(im_fp))
     sw.stop()
     
-    print('Import took %s.\n\n' % sw.format_str())
+    logging.debug('Import took %s.' % sw.format_str())
     return ims
 
 
+def create_descriptor_extractor(de_type, de_params):
+    if de_type == 'ORB':
+        return cv2.ORB_create(10**7, **de_params)
+    else:
+        raise ValueError('Unsupported descriptor extractor type \'%s\'.' % de_type)
+
 def get_descriptors(ims, descriptor_extractor):
-    print('Processing image descriptors...')
+    logging.debug('Processing image descriptors...')
     sw = Stopwatch(); sw.start()
     
     descriptors = []
     n = int(len(ims) / 10)
     for i, im in enumerate(ims):
         if i % n == 0:
-            print(i)
+            logging.debug(i)
         kp, des = descriptor_extractor.detectAndCompute(im, None)
         try:
             descriptors.extend(des)
@@ -68,8 +78,8 @@ def get_descriptors(ims, descriptor_extractor):
             descriptors.extend(des)
         
     sw.stop()
-    print('Total number of descriptors: %d' % len(descriptors))
-    print('Done processing image descriptors. Took %s.\n\n' % sw.format_str())
+    logging.debug('Total number of descriptors: %d' % len(descriptors))
+    logging.debug('Done processing image descriptors. Took %s.' % sw.format_str())
     return descriptors
 
 from cv2 import KeyPoint
@@ -88,7 +98,7 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_channel=4, masks=
 
     features_string = '+'.join((['BOVW'] if consider_descriptors else []) +
                                (['colors'] if consider_colors else []))
-    print('Making %d %s histograms...' % (len(ims), features_string))
+    logging.debug('Making %d %s histograms...' % (len(ims), features_string))
     sw = Stopwatch(); sw.start()
 
     histograms = []
@@ -114,39 +124,40 @@ def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_channel=4, masks=
     vstacked = np.vstack(histograms)
 
     sw.stop()
-    print('Done making histograms. Took %s.\n\n' % sw.format_str())
+    logging.debug('Done making histograms. Took %s.' % sw.format_str())
     return vstacked
 
 def get_params_string(params):
     return ', '.join('%s=%s' % (k, v) for k,v in params.items())
     
 def train(classifier, X, y):
-    print('Fitting model...')
+    logging.debug('Fitting model...')
     sw = Stopwatch(); sw.start()
     
     classifier.fit(X, y)
     
     sw.stop()
-    print('Done fitting model. Took %s.\n\n' % sw.format_str())
+    logging.debug('Done fitting model. Took %s.' % sw.format_str())
     
 
 def get_labels_from_fps(im_fps):
     text_labels = np.array([im_fp.split('/')[-1].split('.')[0] for im_fp in im_fps]) # .../FD.6.png -> FD
     return text_labels
-    
-    
+  
+
+def compute_error(im_labels, predictions):
+    num_incorrect = sum(1 if l != p else 0 for (l, p) in zip(im_labels, predictions))
+    num_total = len(im_labels)
+    return num_incorrect / num_total
+
 def get_score(Y, Y_hat):
     if len(Y) != len(Y_hat):
         raise ValueError
     return sum([1 if y == y_hat else 0 for y, y_hat in zip(Y, Y_hat)]) / len(Y)
 
 
-from collections import defaultdict
-def parse_args(args):
-    args_dict = defaultdict(str)
-    for i, arg in enumerate(args):
-        if arg[0] == '-':
-            prefix = arg.strip('-')
-            suffix = args[i+1]
-            args_dict[prefix] = suffix
-    return args_dict
+def save_model(model, model_output_fp):
+    model_output_dir = get_directory(model_output_fp)
+    os.makedirs(model_output_dir, exist_ok=True)
+    model.save(model_output_fp)
+
