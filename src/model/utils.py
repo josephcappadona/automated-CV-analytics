@@ -55,6 +55,21 @@ def import_images(im_fps):
     return ims
 
 
+def preprocess_images(ims, gaussian_kernel_radius=None):
+    logging.debug('Preprocessing %d images...' % len(ims))
+    sw = Stopwatch(); sw.start()
+
+    new_ims = []
+    for im in ims:
+        if gaussian_kernel_radius:
+            kernel = (gaussian_kernel_radius, gaussian_kernel_radius)
+            im = cv2.GaussianBlur(im, kernel, cv2.BORDER_DEFAULT)
+        new_ims.append(im)
+
+    sw.stop()
+    logging.debug('Done preprocessing images. Took %s.' % sw.format_str())
+    return new_ims
+
 def create_descriptor_extractor(de_type, de_params):
     if de_type == 'ORB':
         return cv2.ORB_create(10**7, **de_params)
@@ -91,36 +106,27 @@ def kp_and_des_for_blank_image(im, descriptor_extractor):
     des = np.zeros((descriptor_extractor.descriptorSize()), dtype=np.uint8)
     return [kp], [des]
     
-def get_histograms(ims, BOVW, descriptor_extractor, n_bins_per_channel=4, masks=None, consider_descriptors=True, consider_colors=True):
+def get_histograms(ims, BOVW, descriptor_extractor, consider_colors, n_bins_per_channel=4):
 
-    if not consider_descriptors and not consider_colors:
-        raise ValueError("Histogram is empty (neither descriptors nor colors are being considered).")
-
-    features_string = '+'.join((['BOVW'] if consider_descriptors else []) +
-                               (['colors'] if consider_colors else []))
+    features_string = 'BOVW' + ('+colors' if consider_colors else '')
     logging.debug('Making %d %s histograms...' % (len(ims), features_string))
     sw = Stopwatch(); sw.start()
 
     histograms = []
-    for i, im in enumerate(ims):
-        mask = masks[i] if masks else None
+    for im in ims:
 
         (bovw_histogram, _), (color_histogram, _) = \
             extract_features(im,
                              BOVW,
                              descriptor_extractor,
-                             n_bins_per_channel=n_bins_per_channel,
-                             mask=mask,
-                             consider_descriptors=consider_descriptors,
-                             consider_colors=consider_colors)
+                             consider_colors,
+                             n_bins_per_channel=n_bins_per_channel)
 
-        if consider_descriptors and consider_colors:
+        if consider_colors:
             complex_histogram = np.hstack((bovw_histogram, color_histogram))
             histograms.append(complex_histogram)
-        elif consider_descriptors:
+        else:
             histograms.append(bovw_histogram)
-        elif consider_colors:
-            histograms.append(color_histogram)
     vstacked = np.vstack(histograms)
 
     sw.stop()
