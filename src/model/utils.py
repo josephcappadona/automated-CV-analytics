@@ -71,8 +71,11 @@ def preprocess_images(ims, gaussian_kernel_radius=None):
     return new_ims
 
 def create_descriptor_extractor(de_type, de_params):
+    logging.debug('Creating %s descriptor extractor with params \'%s\'.' % (de_type, get_params_string(de_params)))
     if de_type == 'ORB':
         return cv2.ORB_create(10**7, **de_params)
+    elif de_type == 'KAZE':
+        return cv2.KAZE_create(**de_params)
     else:
         raise ValueError('Unsupported descriptor extractor type \'%s\'.' % de_type)
 
@@ -106,7 +109,7 @@ def kp_and_des_for_blank_image(im, descriptor_extractor):
     des = np.zeros((descriptor_extractor.descriptorSize()), dtype=np.uint8)
     return [kp], [des]
     
-def get_histograms(ims, BOVW, descriptor_extractor, consider_colors, n_bins_per_channel=4):
+def get_histograms(ims, BOVW, descriptor_extractor, consider_colors, spatial_pyramid_levels, n_bins_per_channel=4):
 
     features_string = 'BOVW' + ('+colors' if consider_colors else '')
     logging.debug('Making %d %s histograms...' % (len(ims), features_string))
@@ -115,26 +118,23 @@ def get_histograms(ims, BOVW, descriptor_extractor, consider_colors, n_bins_per_
     histograms = []
     for im in ims:
 
-        (bovw_histogram, _), (color_histogram, _) = \
+        full_histogram, _, _ = \
             extract_features(im,
                              BOVW,
                              descriptor_extractor,
                              consider_colors,
+                             spatial_pyramid_levels,
                              n_bins_per_channel=n_bins_per_channel)
 
-        if consider_colors:
-            complex_histogram = np.hstack((bovw_histogram, color_histogram))
-            histograms.append(complex_histogram)
-        else:
-            histograms.append(bovw_histogram)
-    vstacked = np.vstack(histograms)
+        histograms.append(full_histogram)
+    all_histograms = np.vstack(histograms)
 
     sw.stop()
     logging.debug('Done making histograms. Took %s.' % sw.format_str())
-    return vstacked
+    return all_histograms
 
 def get_params_string(params):
-    return ', '.join('%s=%s' % (k, v) for k,v in params.items())
+    return ', '.join('%s=%s' % (k, v) for k,v in params.items()) if params else ''
     
 def train(classifier, X, y):
     logging.debug('Fitting model...')

@@ -11,14 +11,13 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.kernel_approximation import RBFSampler, AdditiveChi2Sampler
-from features import extract_features
 import utils
 from utils import Stopwatch
 
 
 class Model(object):
     
-    def __init__(self, model_type='LOGREG', model_params={}, BOVW_size=256, consider_colors=True, descriptor_extractor_type='ORB', descriptor_extractor_params={}, preprocess_params={}, data_transform=None, data_transform_params={}, feature_selection=None, feature_selection_params={}, approximation_kernel=None, approximation_kernel_params={}, **extras):
+    def __init__(self, model_type='LOGREG', model_params={}, BOVW_size=256, spatial_pyramid_levels=1, descriptor_extractor_type='ORB', descriptor_extractor_params={}, preprocess_params={}, data_transform=None, data_transform_params={}, feature_selection=None, feature_selection_params={}, approximation_kernel=None, approximation_kernel_params={}, **extras):
 
         self.model = None
         self.model_type = model_type
@@ -26,7 +25,7 @@ class Model(object):
 
         self.BOVW = None
         self.bovw_size = BOVW_size
-        self.consider_colors = consider_colors
+        self.spatial_pyramid_levels = spatial_pyramid_levels
 
         self.descriptor_extractor = utils.create_descriptor_extractor(
                                         descriptor_extractor_type,
@@ -74,13 +73,12 @@ class Model(object):
             utils.get_histograms(train_ims,
                                  self.BOVW,
                                  self.descriptor_extractor,
-                                 self.consider_colors)
+                                 self.spatial_pyramid_levels)
 
         self.generate_data_transformers()
         train_im_histograms = self.fit_data_transformers(train_im_histograms)
         self.train_model(train_im_histograms, train_im_labels)
         
-        return True
         
     # Model Selection (SVM, KNN)
     def train_model(self, train_im_histograms, train_im_labels):
@@ -109,7 +107,7 @@ class Model(object):
             utils.get_histograms(test_ims,
                                  self.BOVW,
                                  self.descriptor_extractor,
-                                 consider_colors=self.consider_colors)
+                                 self.spatial_pyramid_levels)
         test_histograms = self.transform_histograms(test_histograms)
 
         return self.model.predict(test_histograms)
