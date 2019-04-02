@@ -2,19 +2,22 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import Stopwatch
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.cluster import MiniBatchKMeans, KMeans, DBSCAN
 import logging
 
-def get_clustering(data_to_cluster, k):
+def get_clustering(data_to_cluster, cluster_model_type, cluster_model_params):
     sw = Stopwatch(); sw.start()
 
-    kmeans = MiniBatchKMeans(n_clusters=k)
-    kmeans.fit(data_to_cluster)
-    score = math.log(kmeans.inertia_)
+    if cluster_model_type == 'KMEANS':
+        cluster_model = MiniBatchKMeans(**cluster_model_params)
+    elif cluster_model_type == 'DBSCAN':
+        cluster_model = DBSCAN_w_prediction(**cluster_model_params)
+
+    cluster_model.fit(data_to_cluster)
 
     sw.stop()
-    logging.debug('k: %s, log(inertia): %.5f, time: %s' % (k, score, sw.format_str()))
-    return kmeans
+    logging.debug('Descriptors clustered into %d clusters.' % cluster_model.n_clusters)
+    return cluster_model
 
 
 def get_optimal_clustering(data_to_cluster, cluster_sizes=[2,4,8,16,32,64,128,256,512,1024], show=True):
@@ -74,4 +77,33 @@ def get_knee_point(data, show=True):
     index_of_max = max(enumerate(dist_to_line), key=lambda i_dist: i_dist[1])[0]
     k = data[index_of_max, 0]
     return k
-    
+
+class DBSCAN_w_prediction(DBSCAN):
+
+    def fit(self, *args, **kwargs):
+        ret = super(DBSCAN_A, self).fit(*args, **kwargs)
+        self.n_clusters = len(set(self.labels_))
+        print('\n')
+        print(self.n_clusters)
+        print('\n')
+        return ret
+
+    " taken from https://stackoverflow.com/a/51516334"
+    def predict(self, X):
+
+        nr_samples = X.shape[0]
+
+        y_new = np.ones(shape=nr_samples, dtype=int) * self.n_clusters
+
+        for i in range(nr_samples):
+            diff = self.components_ - X[i, :]  # NumPy broadcasting
+
+            dist = np.linalg.norm(diff, axis=1)  # Euclidean distance
+
+            shortest_dist_idx = np.argmin(dist)
+
+            if dist[shortest_dist_idx] < self.eps:
+                y_new[i] = self.labels_[self.core_sample_indices_[shortest_dist_idx]]
+
+        return y_new
+       

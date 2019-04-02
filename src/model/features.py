@@ -66,6 +66,7 @@ def extract_features(im, cluster_model, descriptor_extractor, spatial_pyramid_le
     keypoints, descriptors = descriptor_extractor.detectAndCompute(im, None)
     if not len(keypoints):
         keypoints, descriptors = utils.kp_and_des_for_blank_image(im, descriptor_extractor)
+    descriptors = np.array(descriptors)
     
     # extract BOVW info
     full_histogram, cluster_matrix, color_matrix = build_histogram(im, cluster_model, keypoints, descriptors, spatial_pyramid_levels)

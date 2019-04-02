@@ -17,14 +17,15 @@ from utils import Stopwatch
 
 class Model(object):
     
-    def __init__(self, model_type='LOGREG', model_params={}, BOVW_size=256, spatial_pyramid_levels=1, descriptor_extractor_type='ORB', descriptor_extractor_params={}, preprocess_params={}, data_transform=None, data_transform_params={}, feature_selection=None, feature_selection_params={}, approximation_kernel=None, approximation_kernel_params={}, **extras):
+    def __init__(self, model_type='LOGREG', model_params={}, cluster_model_type='KMEANS', cluster_model_params={}, spatial_pyramid_levels=1, descriptor_extractor_type='ORB', descriptor_extractor_params={}, preprocess_params={}, data_transform=None, data_transform_params={}, feature_selection=None, feature_selection_params={}, approximation_kernel=None, approximation_kernel_params={}, **extras):
 
         self.model = None
         self.model_type = model_type
         self.model_params = model_params
 
         self.BOVW = None
-        self.bovw_size = BOVW_size
+        self.cluster_model_type = cluster_model_type
+        self.cluster_model_params = cluster_model_params
         self.spatial_pyramid_levels = spatial_pyramid_levels
 
         self.descriptor_extractor = utils.create_descriptor_extractor(
@@ -49,18 +50,13 @@ class Model(object):
         self.approximation_kernel_params = approximation_kernel_params
 
 
-    def BOVW_create(self, ims, show=False):
+    def BOVW_create(self, ims):
         logging.debug('Total images to process for BOVW: %d' % len(ims))
        
         ims = utils.preprocess_images(ims, **self.preprocess_params)
         descriptors = utils.get_descriptors(ims, self.descriptor_extractor)
         
-        if type(self.bovw_size) == int:
-            bovw = clustering.get_clustering(descriptors, self.bovw_size)
-        elif type(self.bovw_size) == list:
-            bovw = clustering.get_optimal_clustering(descriptors, cluster_sizes=self.bovw_size, show=show)
-        else: # use default
-            bovw = clustering.get_optimal_clustering(descriptors, show=show)
+        bovw = clustering.get_clustering(descriptors, self.cluster_model_type, self.cluster_model_params)
 
         self.BOVW = bovw
         logging.debug('BOVW (k=%d) created.' % self.BOVW.n_clusters)
@@ -89,7 +85,7 @@ class Model(object):
         elif self.model_type == 'KNN':
             model = KNeighborsClassifier(**self.model_params)
         elif self.model_type == 'LOGREG':
-            model = LogisticRegression(**self.model_params)
+            model = LogisticRegression(solver='lbfgs', **self.model_params)
         else:
             raise ValueError('Unsupported decision model type \'%s\'.' % self.model_type)
 
@@ -183,7 +179,8 @@ class Model(object):
         d_e = self.descriptor_extractor
         self.descriptor_extractor = None # to prevent pickle error
         
-        pickle.dump(self, open(fp, 'w+b'))
+        with open(fp, 'w+b') as f:
+            pickle.dump(self, f)
         self.descriptor_extractor = d_e # reset, in case we want to continue using model
 
     @staticmethod

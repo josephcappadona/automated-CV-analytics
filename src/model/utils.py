@@ -1,5 +1,6 @@
 import time
 import cv2
+from cv2 import KeyPoint
 import numpy as np
 from features import extract_features
 import os
@@ -52,7 +53,7 @@ def import_images(im_fps):
     sw.stop()
     
     logging.debug('Import took %s.' % sw.format_str())
-    return ims
+    return np.array(ims)
 
 
 def preprocess_images(ims, gaussian_kernel_radius=None):
@@ -98,9 +99,8 @@ def get_descriptors(ims, descriptor_extractor):
     sw.stop()
     logging.debug('Total number of descriptors: %d' % len(descriptors))
     logging.debug('Done processing image descriptors. Took %s.' % sw.format_str())
-    return descriptors
+    return np.array(descriptors)
 
-from cv2 import KeyPoint
 def kp_and_des_for_blank_image(im, descriptor_extractor):
     h, w = im.shape[:2]
     x, y = (int(w/2), int(h/2))
@@ -109,9 +109,9 @@ def kp_and_des_for_blank_image(im, descriptor_extractor):
     des = np.zeros((descriptor_extractor.descriptorSize()), dtype=np.uint8)
     return [kp], [des]
     
-def get_histograms(ims, BOVW, descriptor_extractor, consider_colors, spatial_pyramid_levels, n_bins_per_channel=4):
+def get_histograms(ims, BOVW, descriptor_extractor, spatial_pyramid_levels, n_bins_per_channel=4):
 
-    features_string = 'BOVW' + ('+colors' if consider_colors else '')
+    features_string = 'BOVW+colors'
     logging.debug('Making %d %s histograms...' % (len(ims), features_string))
     sw = Stopwatch(); sw.start()
 
@@ -122,7 +122,6 @@ def get_histograms(ims, BOVW, descriptor_extractor, consider_colors, spatial_pyr
             extract_features(im,
                              BOVW,
                              descriptor_extractor,
-                             consider_colors,
                              spatial_pyramid_levels,
                              n_bins_per_channel=n_bins_per_channel)
 
@@ -148,7 +147,7 @@ def train(classifier, X, y):
 
 def get_labels_from_fps(im_fps):
     text_labels = np.array([im_fp.split('/')[-1].split('.')[0] for im_fp in im_fps]) # .../FD.6.png -> FD
-    return text_labels
+    return np.array(text_labels)
   
 
 def compute_error(im_labels, predictions):
