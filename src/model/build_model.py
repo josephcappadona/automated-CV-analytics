@@ -63,60 +63,18 @@ def build_model(model_args, X_train, y_train, X_test, y_test):
     logging.info('Training model...')
     model.train(X_train, y_train)
      
-    logging.info('Computing validation error...')
     predictions = model.predict(X_test)
 
-    validation_error  = utils.compute_error(y_test, predictions)
+    val_error  = utils.compute_error(y_test, predictions)
     num_total = len(y_test)
-    num_incorrect = int(round(validation_error * num_total))
-    logging.info('Validation error: %g (%d/%d)' % (validation_error, num_incorrect, num_total))
-    return model, validation_error
-print()
+    num_incorrect = int(round(val_error * num_total))
+    logging.info('Validation error: %g (%d/%d)' % (val_error, num_incorrect, num_total))
+    return model, val_error
 
-model_configs = list(hyperparameter_tuning.get_arg_combos(model_args))
-if len(model_configs) > 1:
-    # Find best model config with k-fold cross validation
-    logging.info('%d possible model configs.' % len(model_configs))
-    avg_errors = []
-    n_folds = model_args['n_folds'] if 'n_folds' in model_args else 1
-    logging.info('Finding best model config with k-fold cross validation (k=%d)...' % n_folds)
-    for i, model_config in enumerate(model_configs):
-        print('\n'); logging.info('Model #%d of %d:' % (i+1, len(model_configs)))
-        logging.info('\n%s' % pprint.pformat(model_config))
+model_configs = hyperparameter_tuning.get_model_configs(model_args)
+model, error_infos = hyperparameter_tuning.find_best_model(model_configs, build_model, ims, im_labels)
 
-        errors = []
-        for i, ((X_train, y_train), (X_test, y_test)) \
-            in enumerate(hyperparameter_tuning.get_folds(ims, im_labels, n_splits=n_folds)):
-
-            print('')
-            logging.info('Fold #%d of %d' % (i+1, n_folds))
-
-            _, validation_error = build_model(model_config, X_train, y_train, X_test, y_test)
-            errors.append(validation_error)
-        avg_error = sum(errors) / len(errors)
-        avg_errors.append(avg_error)
-        print(); logging.info('Average cross validation error: %g' % avg_error)
-
-    best_error = min(avg_errors)
-    error_infos = list(zip(model_configs, avg_errors))
-    best = list(filter(lambda m_e: m_e[1] == best_error, error_infos))
-    print('\n'); logging.info('%d model config(s) had the best average cross validation error (%g)' % (len(best), best_error))
-    if len(best) > 1:
-        logging.info('Picking best model config randomly...')
-        best_config, _ = random.choice(best)
-    else:
-        best_config, _ = best[0]
-    logging.info('Chosen config: \n%s' % pprint.pformat(best_config))
-
-    print(); logging.info('Building model with best config on all training data...')
-    model, _ = build_model(best_config, ims, im_labels, ims, im_labels)
-
-else:
-    # Only one possible model config
-    model, validation_error = build_model(model_configs[0], ims, im_labels, ims, im_labels)
-    error_infos = [(model_configs[0], validation_error)]
-
-logging.info('Saving model...')
+print(); logging.info('Saving model...')
 utils.save_model(model, model_output_fp)
 logging.info('Model saved to \'%s\'.' % model_output_fp)
 
