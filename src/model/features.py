@@ -3,33 +3,43 @@ import utils
 import cv2
 
 
-def extract_bovw_info(im, cluster_model, keypoints, descriptors):
+def build_histogram(im, cluster_model, keypoints, descriptors, spatial_pyramid_levels, n_bins_per_channel=4):
     
     h, w = im.shape[:2]
 
+    bovw_size = cluster_model.n_clusters
+    n_color_channels = 1 if len(im.shape) == 2 else im.shape[2]
+    n_colors = n_bins_per_channel ** n_color_channels
+
     cluster_matrix = -np.ones((h, w), dtype=np.int16)
-    bovw_histogram = np.zeros((cluster_model.n_clusters), dtype=np.uint8)
-    l_1_histograms = np.zeros((2, 2, cluster_model.n_clusters), dtype=np.uint8)
-    l_2_histograms = np.zeros((4, 4, cluster_model.n_clusters), dtype=np.uint8)
-    
-    clusters = cluster_model.predict(descriptors)
+    color_matrix = -np.ones((h, w, n_color_channels), dtype=np.int8)
+
+    # build empty pyramid
+    histogram_pyramid = []
+    for l in range(spatial_pyramid_levels):
+        l_i_histogram = np.zeros((2**l, 2**l, bovw_size+n_colors))
+        histogram_pyramid.append(l_i_histogram)
+
     # iterate over keypoints+descriptors,
-    # record each descriptor's cluster id in `cluster_matrix` and `cluster_histogram`
-    for kp, des, c_i in zip(keypoints, descriptors, clusters):
+    # record each descriptor's cluster id and color in relevant data structures
+    cluster_predictions = cluster_model.predict(descriptors)
+    for kp, des, c_i in zip(keypoints, descriptors, cluster_predictions):
+
         x, y = [int(round(coord)) for coord in kp.pt]
+        color_bin = get_bin_for_color(im[y, x], n_color_channels, n_bins_per_channel)
+
         cluster_matrix[y, x] = c_i
-        bovw_histogram[c_i] += 1
+        color_matrix[y, x] = color_bin
 
-        l_1_x, l_1_y = int(x / (w/2)), int(y / (h/2))
-        l_1_histograms[l_1_x, l_1_y, c_i] += 1
-        l_2_x, l_2_y = int(x / (w/4)), int(y / (h/4))
-        l_2_histograms[l_2_x, l_2_y, c_i] += 1
-       
-    l_1_histogram = np.hstack(np.hstack(l_1_histograms))
-    l_2_histogram = np.hstack(np.hstack(l_2_histograms))
-    #bovw_histogram = np.hstack((bovw_histogram, l_1_histogram))
-    return bovw_histogram, cluster_matrix
+        for l in range(spatial_pyramid_levels):
+            l_x, l_y = int(x / (w/2**l)), int(y / (h/2**l))
+            histogram_pyramid[l][l_x, l_y, c_i] += 1
 
+    # concatenate pyramid levels into single histogram
+    for l in range(spatial_pyramid_levels):
+        histogram_pyramid[l] = np.hstack(np.hstack(histogram_pyramid[l]))
+    full_histogram = np.hstack(histogram_pyramid)
+    return full_histogram, cluster_matrix, color_matrix
 
 def get_bin_for_color(pixel, n_color_channels, n_bins_per_channel):
     if n_color_channels == 1: pixel = [pixel]
@@ -49,26 +59,8 @@ def get_bin_for_color(pixel, n_color_channels, n_bins_per_channel):
         # then, bin = 0*(4**0) + 2*(4**1) + 3*(4**2) = 56
     return bin_
 
-def extract_color_info(im, keypoints, n_bins_per_channel=4):
-    
-    h, w = im.shape[:2]
-    n_color_channels = 1 if len(im.shape) == 2 else im.shape[2]
-    n_colors = n_bins_per_channel ** n_color_channels
 
-    color_matrix = -np.ones((h, w, n_color_channels), dtype=np.int8)
-    color_histogram = np.zeros((n_colors), dtype=np.uint8)
-    
-    # iterate over keypoints,
-    # record color at each in `color_matrix` and `color_histogram`
-    for kp in keypoints:
-        x, y = [int(round(coord)) for coord in kp.pt]
-        bin_ = get_bin_for_color(im[y, x], n_color_channels, n_bins_per_channel)
-        color_matrix[y, x] = bin_
-        color_histogram[bin_] += 1
-        
-    return color_histogram, color_matrix
-
-def extract_features(im, cluster_model, descriptor_extractor, consider_colors, n_bins_per_channel=4):
+def extract_features(im, cluster_model, descriptor_extractor, spatial_pyramid_levels, n_bins_per_channel=4):
 
     # extract keypoints and descriptors
     keypoints, descriptors = descriptor_extractor.detectAndCompute(im, None)
@@ -76,13 +68,7 @@ def extract_features(im, cluster_model, descriptor_extractor, consider_colors, n
         keypoints, descriptors = utils.kp_and_des_for_blank_image(im, descriptor_extractor)
     
     # extract BOVW info
-    bovw_histogram, cluster_matrix = extract_bovw_info(im, cluster_model, keypoints, descriptors)
+    full_histogram, cluster_matrix, color_matrix = build_histogram(im, cluster_model, keypoints, descriptors, spatial_pyramid_levels)
 
-    # extract color info
-    if consider_colors:
-        color_histogram, color_matrix = extract_color_info(im, keypoints, n_bins_per_channel=n_bins_per_channel)
-    else:
-        color_histogram, color_matrix = [], []
-
-    return ((bovw_histogram, cluster_matrix), (color_histogram, color_matrix))
+    return full_histogram, cluster_matrix, color_matrix
 
