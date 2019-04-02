@@ -41,9 +41,13 @@ def remove_extension(filename):
     return filename[:filename.rfind('.')]
 
 def import_images(im_fps):
-    logging.debug('Importing images...\nTotal images: %d' % len(im_fps))
+    if not im_fps:
+        logging.error('No images to import. Exiting...')
+        exit()
 
+    logging.debug('Importing images...\nTotal images: %d' % len(im_fps))
     sw = Stopwatch(); sw.start()
+
     ims = []
     n = int(len(im_fps) / 10)
     for i, im_fp in enumerate(im_fps):
@@ -160,6 +164,8 @@ def get_score(Y, Y_hat):
         raise ValueError
     return sum([1 if y == y_hat else 0 for y, y_hat in zip(Y, Y_hat)]) / len(Y)
 
+def compute_average(l):
+    return sum(l) / len(l)
 
 def save_model(model, model_output_fp):
     model_output_dir = get_directory(model_output_fp)

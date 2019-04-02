@@ -1,5 +1,6 @@
 import logging
 import itertools
+import copy
 import pprint
 import random
 import utils
@@ -25,7 +26,7 @@ def get_model_configs(model_args):
 
     model_args_list = []
     for arg_combo in args_combos:
-        model_args_ = model_args.copy()
+        model_args_ = copy.deepcopy(model_args)
         for arg_name, arg_val in arg_combo:
             if type(arg_val) != tuple:
                 model_args_[arg_name] = arg_val
@@ -33,57 +34,38 @@ def get_model_configs(model_args):
                 subarg_name, subarg_val = arg_val
                 model_args_[arg_name][subarg_name] = subarg_val
         model_args_list.append(model_args_)
-
     return model_args_list
 
-def find_best_model(model_configs, build_model, X, y):
 
-    if len(model_configs) > 1:
-        # find best model config with k-fold cross validation
-        logging.info('%d possible model configs.' % len(model_configs))
-        logging.info('Finding best model config with k-fold cross validation...')
+def find_best_models(all_models):
+    best_test_acc = max(all_models, key=lambda x: x[3])[3]  # get elmt with highest test_acc
+    best_models = [(m,c,cv_e,t_a) for m,c,cv_e,t_a in all_models if t_a == best_test_acc]
+    return best_models
 
-        avg_errors = []
-        for i, model_config in enumerate(model_configs):
+def create_all_models(model_configs, build_model, cross_val_model, test_model, X_train, y_train, X_test, y_test):
 
-            print('\n'); logging.info('Model #%d of %d:' % (i+1, len(model_configs)))
-            logging.info('\n' + pprint.pformat(model_config))
+    res = []
+    n_configs = len(model_configs)
+    for i, model_config in enumerate(model_configs):
+        print_model_details(model_config, i+1, n_configs)
 
-            n_folds = model_config['n_folds']
-            cross_val_errors = []
-            for i, ((X_train, y_train), (X_test, y_test)) \
-                in enumerate(get_folds(X, y, n_splits=n_folds)):
+        logging.info('Computing average cross-validation error...')
+        avg_cross_val_error = cross_val_model(model_config, X_train, y_train)
 
-                print(); logging.info('Fold #%d of %d' % (i+1, n_folds))
+        logging.info('Building full model...')
+        full_model = build_model(model_config, X_train, y_train)
 
-                _, val_error = build_model(model_config, X_train, y_train, X_test, y_test)
-                cross_val_errors.append(val_error)
+        print(); logging.info('Testing full model...')
+        test_acc = test_model(full_model, X_test, y_test)
 
-            avg_error = sum(cross_val_errors) / len(cross_val_errors)
-            avg_errors.append(avg_error)
-            print(); logging.info('Average cross validation error: %g' % avg_error)
+        res.append((full_model, model_config, avg_cross_val_error, test_acc))
 
-        best_error = min(avg_errors)
-        error_infos = list(zip(model_configs, avg_errors))
-        best = list(filter(lambda m_e: m_e[1] == best_error, error_infos))
-        print('\n'); logging.info('%d model config(s) had the best average cross validation error (%g)' % (len(best), best_error))
+    return res
 
-        if len(best) > 1:
-            logging.info('Picking best model config randomly...')
-            best_config, _ = random.choice(best)
-        else:
-            best_config, _ = best[0]
-        logging.info('Chosen config: \n%s' % pprint.pformat(best_config))
-
-        print(); logging.info('Building model with best config on all training data...')
-        model, _ = build_model(best_config, X, y, X, y)
-
-    else:
-        # Only one possible model config
-        config = model_configs[0]
-        model, validation_error = build_model(config, X, y, X, y)
-        error_infos = [(config, validation_error)]
-    return model, error_infos
+def print_model_details(model_config, i, n_configs):
+    print('\n\n')
+    logging.info('Model #%d of %d:' % (i, n_configs))
+    logging.info('\n' + pprint.pformat(model_config))
 
 def get_folds(X, y, **kwargs):
     skf = model_selection.StratifiedKFold(**kwargs)

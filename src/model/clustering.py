@@ -14,6 +14,7 @@ def get_clustering(data_to_cluster, cluster_model_type, cluster_model_params):
         cluster_model = DBSCAN_w_prediction(**cluster_model_params)
 
     cluster_model.fit(data_to_cluster)
+    cluster_model.X = data_to_cluster
 
     sw.stop()
     logging.debug('Descriptors clustered into %d clusters.' % cluster_model.n_clusters)
