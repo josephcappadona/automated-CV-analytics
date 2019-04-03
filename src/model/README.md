@@ -32,6 +32,18 @@ optional arguments:
 
 ```
 >>> python src/model/test_model.py -h
+
+usage: python test_model.py [-h] -d DATA_DIR -m MODEL_FP [-v]
+
+Test an image classification model.
+
+required arguments:
+  -d DATA_DIR  The location of the testing snippets
+  -m MODEL_FP  The location of the model to test
+
+optional arguments:
+  -h, --help   show this help message and exit
+  -v           Verbose output (debug)
 ```
 
 ### Example
