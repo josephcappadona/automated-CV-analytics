@@ -90,14 +90,17 @@ def cross_val_model(model_config, X, y):
     print(); logging.info('Average cross validation error: %g\n' % avg_cross_val_error)
     return avg_cross_val_error
 
-def test_model(model, X, y):
+def test_model(model, X, y, test_type='Test'):
     logging.info('Testing model...')
     predictions = model.predict(X)
-    test_acc = 1 - utils.compute_error(y, predictions)
+    err = utils.compute_error(y, predictions)
+    acc = 1 - err
     num_total = len(y)
-    num_correct = int(round(test_acc * num_total))
-    logging.info('Test accuracy: %g (%d/%d)' % (test_acc, num_correct, num_total))
-    return test_acc
+    num_correct = int(round(acc * num_total))
+    num_incorrect = num_total - num_correct
+    logging.info('%s accuracy: %g (%d/%d)' % (test_type, acc, num_correct, num_total))
+    logging.info('%s error: %g (%d/%d)' % (test_type, err, num_incorrect, num_total))
+    return acc
 
 # 
 model_configs = hyperparameter_tuning.get_model_configs(model_args)
@@ -120,8 +123,6 @@ with open(model_output_fp, 'w+b') as model_output_file:
 sw.stop()
 print(); logging.info('Model creation took %s.' % sw.format_str())
 
-'''
 import visualize
-bovw = model.BOVW
-visualize.visualize_BOVW_PCA(bovw)
-'''
+#visualize.visualize_BOVW_PCA(model)
+visualize.visualize_BOVW_samples(all_models[0][0])

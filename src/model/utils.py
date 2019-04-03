@@ -84,32 +84,37 @@ def create_descriptor_extractor(de_type, de_params):
     else:
         raise ValueError('Unsupported descriptor extractor type \'%s\'.' % de_type)
 
-def get_descriptors(ims, descriptor_extractor):
+def get_kp_and_des(ims, descriptor_extractor):
     logging.debug('Processing image descriptors...')
     sw = Stopwatch(); sw.start()
     
-    descriptors = []
-    n = int(len(ims) / 10)
+    keypoints, descriptors = [], []
     for i, im in enumerate(ims):
-        if i % n == 0:
-            logging.debug(i)
-        kp, des = descriptor_extractor.detectAndCompute(im, None)
-        try:
-            descriptors.extend(des)
-        except TypeError:
-            kp, des = kp_and_des_for_blank_image(im, descriptor_extractor)
-            descriptors.extend(des)
+        kp, des = get_single_kp_and_des(im, descriptor_extractor)
+        keypoints.append(kp)
+        descriptors.append(des)
         
     sw.stop()
-    logging.debug('Total number of descriptors: %d' % len(descriptors))
-    logging.debug('Done processing image descriptors. Took %s.' % sw.format_str())
-    return np.array(descriptors)
+    logging.debug('Total number of keypoint+descriptor pairs: %d' % len(descriptors))
+    logging.debug('Done processing image keypoints+descriptors. Took %s.' % sw.format_str())
+    return keypoints, np.array(descriptors)
+
+def get_single_kp_and_des(im, descriptor_extractor):
+    kp, des = descriptor_extractor.detectAndCompute(im, None)
+    if not kp:
+        # kp and des are None => image is essentially blank
+        kp, des = kp_and_des_for_blank_image(im, descriptor_extractor)
+    kp = convert_cv2_kps_to_custom_kps(kp)
+    return kp, des
+
+def convert_cv2_kps_to_custom_kps(kps):
+    return [KeyPoint_custom(kp) for kp in kps]
 
 def kp_and_des_for_blank_image(im, descriptor_extractor):
     h, w = im.shape[:2]
     x, y = (int(w/2), int(h/2))
     size = 1
-    kp = KeyPoint(x, y, size)
+    kp = KeyPoint(x, y, size, -1, 0, 0, -1)
     des = np.zeros((descriptor_extractor.descriptorSize()), dtype=np.uint8)
     return [kp], [des]
     
@@ -172,3 +177,16 @@ def save_model(model, model_output_fp):
     os.makedirs(model_output_dir, exist_ok=True)
     model.save(model_output_fp)
 
+class KeyPoint_custom:
+    def __init__(self, cv2_kp):
+        self.pt = cv2_kp.pt
+        self.x = cv2_kp.pt[0]
+        self.y = cv2_kp.pt[1]
+        self.size = cv2_kp.size
+        self.angle = cv2_kp.angle
+        self.class_id = cv2_kp.class_id
+        self.response = cv2_kp.response
+        self.octave = cv2_kp.octave
+
+def convert_custom_kps_to_cv2_kps(kps):
+    return [cv2.KeyPoint(kp.x, kp.y, kp.size, kp.angle, kp.response, kp.octave, kp.class_id) for kp in kps]

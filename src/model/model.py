@@ -28,10 +28,6 @@ class Model(object):
         self.cluster_model_params = cluster_model_params
         self.spatial_pyramid_levels = spatial_pyramid_levels
 
-        self.descriptor_extractor = utils.create_descriptor_extractor(
-                                        descriptor_extractor_type,
-                                        descriptor_extractor_params
-                                    )
         self.descriptor_extractor_type = descriptor_extractor_type
         self.descriptor_extractor_params = descriptor_extractor_params
 
@@ -49,26 +45,35 @@ class Model(object):
         self.approximation_kernel = approximation_kernel
         self.approximation_kernel_params = approximation_kernel_params
 
+    def get_descriptor_extractor(self):
+        return utils.create_descriptor_extractor(self.descriptor_extractor_type,
+                                                 self.descriptor_extractor_params)
 
     def BOVW_create(self, ims):
         logging.debug('Total images to process for BOVW: %d' % len(ims))
        
         ims = utils.preprocess_images(ims, **self.preprocess_params)
-        descriptors = utils.get_descriptors(ims, self.descriptor_extractor)
+        descriptor_extractor = self.get_descriptor_extractor()
+        keypoints, descriptors = utils.get_kp_and_des(ims, descriptor_extractor)
+        all_descriptors = np.concatenate(descriptors)
         
-        bovw = clustering.get_clustering(descriptors, self.cluster_model_type, self.cluster_model_params)
+        bovw = clustering.get_clustering(all_descriptors, self.cluster_model_type, self.cluster_model_params)
 
         self.BOVW = bovw
+        self.BOVW.ims = ims
+        self.BOVW.kp = keypoints
+        self.BOVW.des = descriptors
         logging.debug('BOVW (k=%d) created.' % self.BOVW.n_clusters)
         
     
     def train(self, train_ims, train_im_labels):
 
+        descriptor_extractor = self.get_descriptor_extractor()
         train_ims = utils.preprocess_images(train_ims, **self.preprocess_params)
         train_im_histograms = \
             utils.get_histograms(train_ims,
                                  self.BOVW,
-                                 self.descriptor_extractor,
+                                 descriptor_extractor,
                                  self.spatial_pyramid_levels)
 
         self.generate_data_transformers()
@@ -97,12 +102,12 @@ class Model(object):
 
 
     def predict(self, test_ims):
-
+        descriptor_extractor = self.get_descriptor_extractor()
         test_ims = utils.preprocess_images(test_ims, **self.preprocess_params)
         test_histograms = \
             utils.get_histograms(test_ims,
                                  self.BOVW,
-                                 self.descriptor_extractor,
+                                 descriptor_extractor,
                                  self.spatial_pyramid_levels)
         test_histograms = self.transform_histograms(test_histograms)
 
@@ -176,12 +181,8 @@ class Model(object):
  
           
     def save(self, fp):
-        d_e = self.descriptor_extractor
-        self.descriptor_extractor = None # to prevent pickle error
-        
         with open(fp, 'w+b') as f:
             pickle.dump(self, f)
-        self.descriptor_extractor = d_e # reset, in case we want to continue using model
 
     @staticmethod
     def load(model_fp):

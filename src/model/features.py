@@ -63,10 +63,7 @@ def get_bin_for_color(pixel, n_color_channels, n_bins_per_channel):
 def extract_features(im, cluster_model, descriptor_extractor, spatial_pyramid_levels, n_bins_per_channel=4):
 
     # extract keypoints and descriptors
-    keypoints, descriptors = descriptor_extractor.detectAndCompute(im, None)
-    if not len(keypoints):
-        keypoints, descriptors = utils.kp_and_des_for_blank_image(im, descriptor_extractor)
-    descriptors = np.array(descriptors)
+    keypoints, descriptors = utils.get_single_kp_and_des(im, descriptor_extractor)
     
     # extract BOVW info
     full_histogram, cluster_matrix, color_matrix = build_histogram(im, cluster_model, keypoints, descriptors, spatial_pyramid_levels)
