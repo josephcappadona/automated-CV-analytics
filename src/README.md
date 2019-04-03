@@ -8,7 +8,7 @@ Responsible for extracting and creating the training data from the video/image s
 
 ### Step 2: Model Creation
 
-Implements image classification model, along with training and testing.
+Implements image classification model (BOVW creation + decision model), along with training and testing.
 
 
 ### Step 3: Entity Localization
