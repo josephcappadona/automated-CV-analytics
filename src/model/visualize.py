@@ -1,16 +1,48 @@
 from sklearn.decomposition import PCA
 import colorsys
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 import random
 from mpl_toolkits.mplot3d import Axes3D
 from PIL import Image
 import cv2
 import utils
+import os
 from collections import defaultdict
 
 
+# high level function used for making visualizations by passing in a command line arg
+def create_visualizations(all_models, visualize_params, save_vis, model_output_fp):
+
+    figs = set([o.lower() for o in visualize_params.split(',')])
+
+    if 'bovw_pca' in figs:
+        visualize_BOVW_PCA(all_models[0][0], save=save_vis, model_fp=model_output_fp)
+
+    if 'bovw_examples' in figs:
+        visualize_BOVW_examples(all_models[0][0], save=save_vis, model_fp=model_output_fp)
+    
+    if 'bovw_keypoints' in figs:
+        visualize_BOVW_keypoints(all_models[0][0], save=save_vis, model_fp=model_output_fp)
+
+    if 'n_train_examples' in figs:
+        visualize_parameter(all_models, 'n_train_examples', save=save_vis, model_fp=model_output_fp)
+
+    if 'n_clusters' in figs:
+        visualize_parameter(all_models, ('cluster_model_params', 'n_clusters'), xscale='log', save=save_vis, model_fp=model_output_fp)
+
+    if 'spatial_pyramid_levels' in figs:
+        visualize_parameter(all_models, 'spatial_pyramid_levels', save=save_vis, model_fp=model_output_fp)
+
+    if 'feature_selection_threshold' in figs:
+        visualize_parameter(all_models, ('feature_selection_params', 'threshold'), save=save_vis, model_fp=model_output_fp)
+
+    if 'descriptor_extractor_threshold' in figs:
+        visualize_parameter(all_models, ('descriptor_extractor_params', 'threshold'), xscale='log', save=save_vis, model_fp=model_output_fp)
+
+
 # visualizes BOVW clusters in 3 dimensions (using PCA)
-def visualize_BOVW_PCA(model):
+def visualize_BOVW_PCA(model, save=False, show=True, model_fp=None):
 
     BOVW = model.BOVW
     descriptors = BOVW.X
@@ -26,11 +58,15 @@ def visualize_BOVW_PCA(model):
 
         ax.scatter(*pca_v, c=label_to_color[c_i])
 
-    plt.show()
+    if save:
+        fig_fp = get_fig_filepath('bovw_pca', model_fp)
+        save_figure(fig, fig_fp)
+    if show:
+        plt.show()
 
 
 # extracts visual word patches and displays them in their clusters
-def visualize_BOVW_samples(model):
+def visualize_BOVW_examples(model, save=False, show=True, model_fp=None):
    
     BOVW = model.BOVW
     keypoints = BOVW.kp
@@ -45,9 +81,9 @@ def visualize_BOVW_samples(model):
             d[c].append(kp_im)
     
     n_rows = n_cols = 8
-    f, axarr = plt.subplots(n_rows, n_cols)
-    f.suptitle('Bag of Visual Word samples', fontsize=20)
-    f.set_size_inches(2+n_cols, 0.5+n_rows)
+    fig, axarr = plt.subplots(n_rows, n_cols)
+    fig.suptitle('Bag of Visual Word samples', fontsize=20)
+    fig.set_size_inches(2+n_cols, 0.5+n_rows)
     for r in range(n_rows):
         for c in range(n_cols):
             try:
@@ -62,7 +98,13 @@ def visualize_BOVW_samples(model):
         ax.set_title('cluster #%d' % (c+1), pad=20, fontdict={'fontsize':8, 'fontweight':'semibold'})
 
     plt.subplots_adjust(left=0.05, right=0.95, top=0.85, bottom=0.05, wspace=1, hspace=0.5)
-    plt.show()
+
+    if save:
+        fig_fp = get_fig_filepath('bovw_examples', model_fp)
+        save_figure(fig, fig_fp)
+    if show:
+        plt.show()
+
 
 def get_kp_bbox(kp):
     x, y = kp.pt
@@ -75,7 +117,7 @@ def get_kp_bbox(kp):
 
 
 # draws keypoints over small sample of positive and negative images
-def visualize_keypoints(model):
+def visualize_BOVW_keypoints(model, save=False, show=True, model_fp=None):
     
     BOVW = model.BOVW
     keypoints = BOVW.kp
@@ -90,9 +132,9 @@ def visualize_keypoints(model):
         d[im_label].append(kp_im)
 
     n_rows, n_cols = 5, len(sorted_labels)
-    f, axarr = plt.subplots(n_rows, n_cols)
-    f.suptitle('Snippet Keypoint Visualization', fontsize=20)
-    f.set_size_inches(2+n_cols*2, 2+n_rows*1.25)
+    fig, axarr = plt.subplots(n_rows, n_cols)
+    fig.suptitle('Snippet Keypoint Visualization', fontsize=20)
+    fig.set_size_inches(2+n_cols*2, 2+n_rows*1.25)
     for r in range(n_rows):
         for c in range(n_cols):
             try:
@@ -104,14 +146,19 @@ def visualize_keypoints(model):
                 
     # label columns
     for ax, label in zip(axarr[0], sorted_labels):
-        ax.set_title(label, pad=10, fontdict={'fontsize':8, 'fontweight':'semibold'})
+        ax.set_title(label, pad=20, fontdict={'fontsize':8, 'fontweight':'semibold'})
 
     plt.subplots_adjust(left=0.15, right=0.85, top=0.85, bottom=0.1, wspace=0.4, hspace=0.4)
-    plt.show()
+
+    if save:
+        fig_fp = get_fig_filepath('bovw_keypoints', model_fp)
+        save_figure(fig, fig_fp)
+    if show:
+        plt.show()
 
 
 # graphs visualization of cross_val_err and test_acc with changes in a parameter
-def visualize_parameter(results, parameter):
+def visualize_parameter(results, parameter, save=False, show=True, model_fp=None, **kwargs):
     x = []
     errs = []
     accs = []
@@ -135,13 +182,44 @@ def visualize_parameter(results, parameter):
     ax.set_xticks(x)
     ax.set_yticks([0, 1], minor=True)
     ax.set_xlabel(parameter)
+    if 'xscale' in kwargs:
+        ax.set_xscale(kwargs['xscale'])
+        ax.xaxis.set_major_formatter(FormatStrFormatter('%g'))
+        #ax.xaxis.set_minor_formatter(FormatStrFormatter('%g'))
 
     # label points
     for x, (err, acc) in zip(x, zip(errs, accs)):
-        ax.annotate(' %g' % err, xy=(x,err), xycoords='data')
-        ax.annotate(' %g' % acc, xy=(x,acc), xycoords='data')
+        ax.annotate('(%d, %g)' % (x, err), (x,err), xytext=(0,9), textcoords='offset points', ha='center')
+        ax.annotate('(%d, %g)' % (x, acc), (x,acc), xytext=(0,-16), textcoords='offset points', ha='center')
 
-    plt.show()
+    if save:
+        fig_fp = get_fig_filepath(parameter, model_fp)
+        save_figure(fig, fig_fp)
+    if show:
+        plt.show()
+
+
+# methods for saving graphics
+
+def save_figure(fig, fig_fp):
+    fig.savefig(fig_fp)
+
+def get_fig_filepath(parameter, model_fp):
+    model_dir = get_directory(model_fp)
+    model_fn_base = remove_extension(get_filename(model_fp))
+
+    fig_fn = model_fn_base + '.' + parameter + '_vis.png'
+    fig_fp = os.path.join(model_dir, fig_fn)
+    return fig_fp
+
+def get_filename(fp):
+    return fp.split('/')[-1]
+
+def remove_extension(fn):
+    return ".".join(fn.split('.')[:-1])
+
+def get_directory(fp):
+    return "/".join(fp.split('/')[:-1])
 
 
 # adapted from https://stackoverflow.com/a/47194111
@@ -152,3 +230,4 @@ def get_N_HexCol(N):
         rgb = map(lambda x: int(x * 255), colorsys.hsv_to_rgb(*rgb))
         hex_out.append('#%02x%02x%02x' % tuple(rgb))
     return hex_out
+

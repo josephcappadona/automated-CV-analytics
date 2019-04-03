@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import sys
 import yaml
 import logging
@@ -9,7 +10,8 @@ import os
 import numpy as np
 from model import Model
 import hyperparameter_tuning
-import pickle
+import visualize
+
 
 # define command line args
 parser = argparse.ArgumentParser(prog=('python %s' % sys.argv[0]), description='Build an image classification model.')
@@ -20,6 +22,8 @@ parser._action_groups.append(optional_args)
 optional_args.add_argument('-v', help='Verbose output (debug)', action='store_true')
 optional_args.add_argument('-e', type=str, help='The output location of cross validation errors for each config, for analysis after training is complete', default='', metavar='ERROR_INFO_FP')
 optional_args.add_argument('-store-all', help='Store all models (default: store only the best models)', action='store_true')
+optional_args.add_argument('-visualize', help='Create visualizations of model components and/or parameters', default='', metavar='VISUALIZE_OPTIONS')
+optional_args.add_argument('-save-vis', help='Save visualizations to file', action='store_true')
 
 required_args.add_argument('-train', type=str, help='The location of the training snippets', required=True, metavar='TRAIN_DIR')
 required_args.add_argument('-test', type=str, help='The location of the testing snippets', required=True, metavar='TEST_DIR')
@@ -36,6 +40,8 @@ model_output_fp = args.m
 verbose = args.v
 store_all = args.store_all
 error_info_fp = args.e
+visualize_params = args.visualize
+save_vis = args.save_vis
 
 # set logger, start stopwatch
 logging_level = logging.DEBUG if verbose else logging.INFO
@@ -60,9 +66,9 @@ test_ims = utils.import_images(test_im_fps)
 test_im_labels = utils.get_labels_from_fps(test_im_fps)
 
 import pprint
-def build_model(model_args, X, y):
+def build_model(model_config, X, y):
     logging.info('Building new model...')
-    model = Model(**model_args)
+    model = Model(**model_config)
 
     logging.info('Building BOVW...')
     model.BOVW_create(X, y)
@@ -83,7 +89,7 @@ def cross_val_model(model_config, X, y):
         print(); logging.info('Fold #%d of %d' % (j+1, n_folds))
 
         model = build_model(model_config, X_cv_train, y_cv_train)
-        val_error = 1 - test_model(model, X_cv_test, y_cv_test)
+        _, val_error = test_model(model, X_cv_test, y_cv_test, test_type='Validation fold')
         cross_val_errors.append(val_error)
 
     avg_cross_val_error = utils.compute_average(cross_val_errors)
@@ -120,17 +126,14 @@ with open(model_output_fp, 'w+b') as model_output_file:
     else:
         pickle.dump(best_models, model_output_file)
         logging.info('%d/%d model(s) (test_acc=%g) and train+test statistics saved to \'%s\'.' % (len(best_models), len(model_configs), best_test_acc, model_output_fp))
+        logging.info('Random best model config:\n%s' % pprint.pformat(best_models[0][1]))
 
 #
 sw.stop()
 print(); logging.info('Model creation took %s.' % sw.format_str())
 
-import visualize
-#visualize.visualize_BOVW_PCA(all_models[0][0])
-#visualize.visualize_BOVW_samples(all_models[0][0])
-#visualize.visualize_keypoints(all_models[0][0])
-#visualize.visualize_parameter(all_models, 'n_samples')
-visualize.visualize_parameter(all_models, ('cluster_model_params', 'n_clusters'))
-#visualize.visualize_parameter(all_models, 'spatial_pyramid_levels')
-#visualize.visualize_parameter(all_models, ('feature_selection_params', 'threshold'))
-#visualize.visualize_parameter(all_models, 'descriptor_extractor_params', 'threshold'))
+
+if visualize_params:
+    logging.info('Creating visualizations...')
+    visualize.create_visualizations(all_models, visualize_params, save_vis, model_output_fp)
+

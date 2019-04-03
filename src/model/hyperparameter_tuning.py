@@ -1,4 +1,5 @@
 import logging
+import time
 import itertools
 import copy
 import pprint
@@ -50,23 +51,24 @@ def create_all_models(model_configs, build_model, cross_val_model, test_model, X
         print_model_details(model_config, i+1, n_configs)
         
         # limit the number of training examples
+        X_train_, y_train_ = X_train[:], y_train[:]
         if 'n_train_examples' in model_config:
             n_train_examples = model_config['n_train_examples']
-            logging.info('Limiting # of training examples to %d...' % n_train_examples)
-            X_train, y_train = utils.remove_extra_examples(X_train, y_train, n_train_examples)
+            logging.info('Limiting # of positive training examples to %d per class...' % n_train_examples)
+            X_train_, y_train_ = utils.remove_extra_examples(X_train_, y_train_, n_train_examples)
 
         #
         if 'n_folds' in model_config:
             logging.info('Computing average cross-validation error...')
-            _, val_error = cross_val_model(model_config, X_train, y_train)
+            val_error = cross_val_model(model_config, X_train_, y_train_)
 
         #
         logging.info('Building full model...')
-        full_model = build_model(model_config, X_train, y_train)
+        full_model = build_model(model_config, X_train_, y_train_)
 
         #
         if 'n_folds' not in model_config:
-            _, val_error = test_model(full_model, X_train, y_train, test_type='Validation')
+            _, val_error = test_model(full_model, X_train_, y_train_, test_type='Validation')
 
         #
         print(); logging.info('Testing full model...')

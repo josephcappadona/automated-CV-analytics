@@ -70,7 +70,7 @@ def remove_extra_examples(train_ims, train_im_labels, n_train_samples):
             count_dict[label] += 1
             condensed_ims.append(im)
             condensed_im_labels.append(label)
-    return condensed_ims, condensed_im_labels
+    return np.array(condensed_ims), np.array(condensed_im_labels)
 
 
 def preprocess_images(ims, gaussian_kernel_radius=None):
