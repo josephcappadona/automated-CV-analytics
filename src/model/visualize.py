@@ -176,7 +176,8 @@ def visualize_parameter(results, parameter, save=False, show=True, model_fp=None
     ax.plot(x, errs, marker='s', color='blue', label='cross_val_err')
     ax.legend()
 
-    parameter = parameter[1] if type(parameter) == tuple else parameter
+    if type(parameter) == tuple:
+        parameter = '_'.join(parameter[0].split('_')[:-1] + [parameter[1]])
     ax.set_title('Cross-Val Error, Test Accuracy vs %s' % parameter, pad=15)
 
     ax.set_xticks(x)
