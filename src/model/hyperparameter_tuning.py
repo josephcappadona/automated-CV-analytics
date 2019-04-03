@@ -49,16 +49,20 @@ def create_all_models(model_configs, build_model, cross_val_model, test_model, X
     for i, model_config in enumerate(model_configs):
         print_model_details(model_config, i+1, n_configs)
 
-        logging.info('Computing average cross-validation error...')
-        avg_cross_val_error = cross_val_model(model_config, X_train, y_train)
+        if 'n_folds' in model_config:
+            logging.info('Computing average cross-validation error...')
+            val_error = cross_val_model(model_config, X_train, y_train)
 
         logging.info('Building full model...')
         full_model = build_model(model_config, X_train, y_train)
 
+        if 'n_folds' not in model_config:
+            val_error = test_model(full_model, X_train, y_train, test_type='Validation')
+
         print(); logging.info('Testing full model...')
         test_acc = test_model(full_model, X_test, y_test)
 
-        res.append((full_model, model_config, avg_cross_val_error, test_acc))
+        res.append((full_model, model_config, val_error, test_acc))
 
     return res
 
