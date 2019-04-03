@@ -24,10 +24,10 @@ logging_level = logging.DEBUG if args.v else logging.INFO
 logging.basicConfig(stream=sys.stdout, level=logging_level)
 
 logging.info('Loading model from file...')
-with open(model_fp, 'rb') as model_file
+with open(model_fp, 'rb') as model_file:
     model = pickle.load(model_file)
-    if type(model) == list:
-        logging.error('\'%s\' contains list, not model. Exiting...' % model_fp)
+    if type(model) != model:
+        logging.error('\'%s\' contains object of type \'%s\', not Model. Exiting...' % (model_fp, type(model).__name__)
 
 logging.info('Loading data...')
 im_fps = glob2.glob(os.path.join(data_dir, '**/snippets/**/*.png'))
