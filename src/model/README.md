@@ -36,6 +36,17 @@ optional arguments:
 python src/model/build_model.py -train output/my_example_train/ -test output/my_example_test -c configs/my_example/config.yaml -m models/my_example_model.pkl -visualize bovw_pca -save-vis
 ```
 
+### Details
+
+Model architecture is as follows:
+* Image descriptors of image keypoints are aggregated from image snippets created in Step 1 (data preparation) using OpenCV descriptor extractors (KAZE, ORB, etc). Image snippets can be blurred for (usually) better performance.
+* Set of image descriptors is clustered (kmeans, hierarchical clustering) to form Bag of Visual Words (BOVW). Number of clusters can be specified, otherwise many different cluster sizes are tried and the best number is used.
+* Histograms of BOVW and color info are created from training image snippets.
+* Histograms are used as input to model of choice (SVM, KNN, Logistic Regression). Before training/testing, histograms are transformed using the some combination of data transformation (scaling, normalization), feature selection (variance threshold, Chi^2), and approximation kernel mapping (RBF, Chi^2).
+* Model supports hyperparameter search where a list of potential parameters are considered and the best is chosen using k-folds cross validation.
+* Various model details can be visualized, such as BOVW structure and how the performance varies with different parameters.
+
+
 ### TODOs
 
 * Implement other feature selection options (Chi^2, )
