@@ -1,4 +1,5 @@
 import argparse
+import pickle
 import sys
 import logging
 import utils
@@ -23,7 +24,10 @@ logging_level = logging.DEBUG if args.v else logging.INFO
 logging.basicConfig(stream=sys.stdout, level=logging_level)
 
 logging.info('Loading model from file...')
-model = Model.load(model_fp)
+with open(model_fp, 'rb') as model_file
+    model = pickle.load(model_file)
+    if type(model) == list:
+        logging.error('\'%s\' contains list, not model. Exiting...' % model_fp)
 
 logging.info('Loading data...')
 im_fps = glob2.glob(os.path.join(data_dir, '**/snippets/**/*.png'))
