@@ -30,6 +30,10 @@ optional arguments:
   -save-vis             Save visualizations to file
 ```
 
+```
+>>> python src/model/test_model.py -h
+```
+
 ### Example
 
 ```
@@ -45,6 +49,22 @@ Model architecture is as follows:
 * Histograms are used as input to model of choice (SVM, KNN, Logistic Regression). Before training/testing, histograms are transformed using the some combination of data transformation (scaling, normalization), feature selection (variance threshold, Chi^2), and approximation kernel mapping (RBF, Chi^2).
 * Model supports hyperparameter search where a list of potential parameters are considered and the best is chosen using k-folds cross validation.
 * Various model details can be visualized, such as BOVW structure and how the performance varies with different parameters.
+
+`build_model.py` is the script used to assemble and test models. See above for usage.
+
+`test_model.py` is used to test models beyond the testing that is done in `build_model.py`.
+
+`hyperparameter_tuning.py` implements the hyperparameter search and helper functions for k-fold cross-validation.
+
+`model.py` implements the object used to store the BOVW and decision model.
+
+`clustering.py` implements the creating of BOVW through clustering.
+
+`features.py` implements the creating of BOVW+color histograms.
+
+`visualize.py` is used to create graphics related to BOVW structure and how model performance changes with different parameters.
+
+`utils.py` implements various helper functions that are shared throughout the above scripts.
 
 
 ### TODOs
