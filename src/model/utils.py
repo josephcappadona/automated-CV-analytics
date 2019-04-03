@@ -4,6 +4,7 @@ from cv2 import KeyPoint
 import numpy as np
 from features import extract_features
 import os
+from collections import defaultdict
 import logging
 
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
@@ -58,6 +59,18 @@ def import_images(im_fps):
     
     logging.debug('Import took %s.' % sw.format_str())
     return np.array(ims)
+
+def remove_extra_examples(train_ims, train_im_labels, n_train_samples):
+    condensed_ims, condensed_im_labels = [], []
+    count_dict = defaultdict(int)
+    for im, label in zip(train_ims, train_im_labels):
+        if label != 'NEGATIVE' and count_dict[label] >= n_train_samples:
+            continue
+        else:
+            count_dict[label] += 1
+            condensed_ims.append(im)
+            condensed_im_labels.append(label)
+    return condensed_ims, condensed_im_labels
 
 
 def preprocess_images(ims, gaussian_kernel_radius=None):

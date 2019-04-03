@@ -49,7 +49,7 @@ class Model(object):
         return utils.create_descriptor_extractor(self.descriptor_extractor_type,
                                                  self.descriptor_extractor_params)
 
-    def BOVW_create(self, ims):
+    def BOVW_create(self, ims, im_labels):
         logging.debug('Total images to process for BOVW: %d' % len(ims))
        
         ims = utils.preprocess_images(ims, **self.preprocess_params)
@@ -61,8 +61,10 @@ class Model(object):
 
         self.BOVW = bovw
         self.BOVW.ims = ims
+        self.BOVW.im_labels = im_labels
         self.BOVW.kp = keypoints
         self.BOVW.des = descriptors
+        self.BOVW.clusters = [self.BOVW.predict(des) for des in descriptors]
         logging.debug('BOVW (k=%d) created.' % self.BOVW.n_clusters)
         
     

@@ -65,7 +65,7 @@ def build_model(model_args, X, y):
     model = Model(**model_args)
 
     logging.info('Building BOVW...')
-    model.BOVW_create(X)
+    model.BOVW_create(X, y)
 
     logging.info('Training model...')
     model.train(X, y)
@@ -100,7 +100,7 @@ def test_model(model, X, y, test_type='Test'):
     num_incorrect = num_total - num_correct
     logging.info('%s accuracy: %g (%d/%d)' % (test_type, acc, num_correct, num_total))
     logging.info('%s error: %g (%d/%d)' % (test_type, err, num_incorrect, num_total))
-    return acc
+    return acc, err
 
 # 
 model_configs = hyperparameter_tuning.get_model_configs(model_args)
@@ -112,9 +112,11 @@ best_test_acc = best_models[0][3]
 #
 print('\n\n'); logging.info('Saving models...')
 with open(model_output_fp, 'w+b') as model_output_file:
+
     if store_all:
         pickle.dump(all_models, model_output_file)
         logging.info('All %d model(s) and train+test statistics saved to \'%s\'.' % (len(model_configs), model_output_fp))
+
     else:
         pickle.dump(best_models, model_output_file)
         logging.info('%d/%d model(s) (test_acc=%g) and train+test statistics saved to \'%s\'.' % (len(best_models), len(model_configs), best_test_acc, model_output_fp))
@@ -124,5 +126,11 @@ sw.stop()
 print(); logging.info('Model creation took %s.' % sw.format_str())
 
 import visualize
-#visualize.visualize_BOVW_PCA(model)
-visualize.visualize_BOVW_samples(all_models[0][0])
+#visualize.visualize_BOVW_PCA(all_models[0][0])
+#visualize.visualize_BOVW_samples(all_models[0][0])
+#visualize.visualize_keypoints(all_models[0][0])
+#visualize.visualize_parameter(all_models, 'n_samples')
+visualize.visualize_parameter(all_models, ('cluster_model_params', 'n_clusters'))
+#visualize.visualize_parameter(all_models, 'spatial_pyramid_levels')
+#visualize.visualize_parameter(all_models, ('feature_selection_params', 'threshold'))
+#visualize.visualize_parameter(all_models, 'descriptor_extractor_params', 'threshold'))

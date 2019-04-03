@@ -48,19 +48,29 @@ def create_all_models(model_configs, build_model, cross_val_model, test_model, X
     n_configs = len(model_configs)
     for i, model_config in enumerate(model_configs):
         print_model_details(model_config, i+1, n_configs)
+        
+        # limit the number of training examples
+        if 'n_train_examples' in model_config:
+            n_train_examples = model_config['n_train_examples']
+            logging.info('Limiting # of training examples to %d...' % n_train_examples)
+            X_train, y_train = utils.remove_extra_examples(X_train, y_train, n_train_examples)
 
+        #
         if 'n_folds' in model_config:
             logging.info('Computing average cross-validation error...')
-            val_error = cross_val_model(model_config, X_train, y_train)
+            _, val_error = cross_val_model(model_config, X_train, y_train)
 
+        #
         logging.info('Building full model...')
         full_model = build_model(model_config, X_train, y_train)
 
+        #
         if 'n_folds' not in model_config:
-            val_error = test_model(full_model, X_train, y_train, test_type='Validation')
+            _, val_error = test_model(full_model, X_train, y_train, test_type='Validation')
 
+        #
         print(); logging.info('Testing full model...')
-        test_acc = test_model(full_model, X_test, y_test)
+        test_acc, _ = test_model(full_model, X_test, y_test)
 
         res.append((full_model, model_config, val_error, test_acc))
 
